@@ -81,9 +81,17 @@ server is already configured for the repository; approve OAuth on first use
 | 1. Push, then close the IDE | `demo/seed-mr.sh` | Code Review threads; pipeline fails on a seeded off-by-one; Fix CI/CD Pipeline posts a suggestion |
 | 2. Return to the agent | ask "What's the status of my MR?" | One report; nothing re-run; fix, push, follow-up review, threads resolved |
 | 3a. Main-branch repair | `demo/break-main.sh`, then merge it | Main fails; a `[FixPipeline]` MR opens, labeled `main::broken`, awaiting approval |
-| 3b. SAST remediation | already on `main` (`app/routes.py`) | FP assessment on the SQL injection finding; a fix MR with a confidence score |
+| 3b. SAST remediation | `demo/seed-sast.sh`, then merge it | FP assessment on the SQL injection finding; a fix MR with a confidence score |
 
 The full shot list for the video is in `demo/demo-script.md`.
+
+The demo scripts plant bugs and a SQL injection on purpose. Run them only in a
+private copy of this repository; see `SECURITY.md`.
+
+## When something doesn't run
+
+`docs/troubleshooting.md` is organized by symptom. Self-Managed and Dedicated
+setup is in `docs/self-managed.md`.
 
 ## Status
 
@@ -110,7 +118,9 @@ make sync-skills   # after editing anything under .agents/skills/
 make check-skills  # what the skills-in-sync CI job runs
 ```
 
-The SQL injection in `app/routes.py` is intentional. Do not fix it on `main`.
+Keep `main` free of planted vulnerabilities; the demo scripts add them on
+branches. When you change a skill, bump `metadata.version` in its `SKILL.md`
+and add an entry to `CHANGELOG.md`.
 
 ## License
 

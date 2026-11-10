@@ -103,6 +103,8 @@ edit, and re-check after plugin updates.
 
 ## Self-Managed and Dedicated
 
+Full instructions are in `docs/self-managed.md`. In short:
+
 - Replace `gitlab.com` with your host in every example.
 - Ask your admin to pre-register one OAuth application (scope `mcp`,
   Confidential cleared) so clients don't rely on dynamic client registration,

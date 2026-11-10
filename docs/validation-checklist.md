@@ -50,7 +50,7 @@ Record pass / partial / fail and open an issue for every gap.
 | D1 | `demo/break-main.sh` merged → main pipeline fails → repair MR opens | |
 | D2 | Repair MR follows AGENTS.md (title prefix, `main::broken` label, pins an existing version) | |
 | D3 | Repair MR cannot merge without required approvals | |
-| D4 | SAST finding on main gets an FP assessment | |
+| D4 | `demo/seed-sast.sh` merged → SAST finding on main gets an FP assessment | |
 | D5 | Resolve SAST Vulnerability opens a fix MR with a confidence score | |
 | D6 | Fix MR attributed to the vulnerability's author, needs approval | |
 | D7 | Developer-role user completes the loop; Guest gets a clear error | |
@@ -69,6 +69,7 @@ Record pass / partial / fail and open an issue for every gap.
 | E7 | What integer does `aiFlowTriggerCreate.eventTypes` use for `PIPELINE_HOOKS`? | |
 | E8 | Does Claude Code expand `@AGENTS.md` in `CLAUDE.md` on the current version? | |
 | E9 | Does the current Codex read project `.codex/config.toml`, send `http_headers`, and still need `rmcp_client`? | |
+| E11 | Does adding `metadata.version` to SKILL.md front matter break skill loading in any client? | |
 | E10 | Does `mr-review-automated-rules.yaml` accept glob patterns in `authors`? | |
 
 ## Exit criteria

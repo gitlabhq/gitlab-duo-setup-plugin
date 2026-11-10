@@ -2,6 +2,8 @@
 name: gitlab-checks
 description: Pick up where GitLab left off on a merge request. Use this whenever the user asks about the status of their MR, branch, pipeline, or review; mentions GitLab Duo, a failed pipeline, review comments, a SAST or security finding, or "what happened while I was away"; asks you to fix review feedback or a CI failure; or is about to push, request a review, or start any GitLab Duo flow. It finds the MR for the current branch, checks which Duo sessions are already running, gathers review threads, pipeline failures, fix suggestions and security findings through the GitLab MCP server, proposes what to do, and verifies the result after you push. Always use it before starting a Duo review or repair so nothing runs twice.
 compatibility: Requires the GitLab MCP server (toolsets core, merge_requests, repository, ci, duo_agent_platform; code_security for vulnerabilities) and glab for git operations.
+metadata:
+  version: "0.1.0"
 ---
 
 # gitlab-checks

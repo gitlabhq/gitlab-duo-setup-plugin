@@ -2,6 +2,8 @@
 name: gitlab-recommended-config
 description: Check whether a GitLab project and its top-level group are on the recommended GitLab configuration for agentic engineering, and report exactly what is on, off, or missing with the settings page to fix each item. Use this whenever the user asks if GitLab Duo is set up, why a review or pipeline fix did not run, whether flows are enabled, how to turn on automatic code review or SAST remediation, or anything about "the recommended configuration", "DAP setup", "Duo settings", or "is this project ready". Also use it when gitlab-checks finds that a flow it expected is not running. Read-only: it reports, and gives the exact command or settings page for each change.
 compatibility: Requires glab authenticated to the instance (glab auth status) and jq. Reading group settings requires the Owner role on the top-level group.
+metadata:
+  version: "0.1.0"
 ---
 
 # gitlab-recommended-config
@@ -74,8 +76,11 @@ this project. Tell the user which of the seven are present.
   Triage and Remediation profile. If the Triage and Remediation profile is
   attached, it replaces the two project-level SAST toggles above; report it as
   "covered by profile".
-- **Repository files**: check that `.gitlab/duo/agent-config.yml` and
-  `.gitlab/duo/mr-review-instructions.yaml` exist on the default branch.
+- **Repository files**: check that `.gitlab/duo/agent-config.yml`,
+  `.gitlab/duo/mr-review-instructions.yaml` and `.gitlab/CODEOWNERS` exist on
+  the default branch. If CODEOWNERS still names `@your-group/maintainers`,
+  report it as `placeholder`: no real owner is asked to review changes to the
+  CI, Duo, agent or MCP configuration.
 - **Runner**: on GitLab Self-Managed, confirm Settings > General > GitLab Duo
   shows the CI/CD runner check as passing. On GitLab.com hosted runners are used.
 
@@ -94,6 +99,7 @@ this project. Tell the user which of the seven are present.
 | Group: Duo + Agent Platform + MCP | ... | ... |
 | Flows selected for the group | <n>/7 — missing: ... | Settings > GitLab Duo (top-level group) |
 | agent-config.yml / review instructions | present / missing | commit from this repo |
+| CODEOWNERS for agent and CI config | present / missing / placeholder | replace `@your-group/maintainers`; require code owner approval on the default branch |
 
 Next: <the commands below that apply to the rows that are off>
 ```
@@ -114,6 +120,6 @@ Do not run these yourself. Selecting flows for the group is a one-time task for
 an Owner of the top-level group: Settings > GitLab Duo > Change configuration >
 Flow execution.
 
-Keep every status to one of: `on`, `off`, `present`, `missing`, `covered by
-profile`, `unknown`, `unchecked`. Do not infer a status from a related setting;
+Keep every status to one of: `on`, `off`, `present`, `missing`, `placeholder`,
+`covered by profile`, `unknown`, `unchecked`. Do not infer a status from a related setting;
 each row comes from its own field or page.

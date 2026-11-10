@@ -107,7 +107,11 @@ check_project() {
   echo
   echo "Repository files on $default_branch:"
   for f in .gitlab/duo/agent-config.yml .gitlab/duo/mr-review-instructions.yaml .gitlab/CODEOWNERS AGENTS.md; do
-    if glab api "projects/$id/repository/files/$(enc "$f")?ref=$default_branch" >/dev/null 2>&1; then
+    if [ "$f" = .gitlab/CODEOWNERS ] &&
+       glab api "projects/$id/repository/files/$(enc "$f")/raw?ref=$default_branch" 2>/dev/null |
+         grep -q '@your-group/maintainers'; then
+      printf '  %-40s placeholder owner, replace @your-group/maintainers\n' "$f"
+    elif glab api "projects/$id/repository/files/$(enc "$f")?ref=$default_branch" >/dev/null 2>&1; then
       printf '  %-40s present\n' "$f"
     else
       printf '  %-40s missing\n' "$f"

@@ -10,9 +10,10 @@ Maintainer merges in scene 7.
 
 **Pre-staged before recording (do not record live):**
 
-- The vulnerable `search_items` route has been on `main` long enough for the
-  default-branch SAST scan, false positive detection, and vulnerability
-  resolution to finish. Confirm the FP badge and the fix MR exist.
+- `demo/seed-sast.sh` has been run and merged, and the vulnerable
+  `search_items` route has been on `main` long enough for the default-branch
+  SAST scan, false positive detection, and vulnerability resolution to finish.
+  Confirm the FP badge and the fix MR exist.
 - `demo/break-main.sh` has been run and merged once, so a `[FixPipeline]`
   repair MR exists for the B-roll in scene 5. Revert or merge it afterwards so
   `main` is green again before scene 4.
