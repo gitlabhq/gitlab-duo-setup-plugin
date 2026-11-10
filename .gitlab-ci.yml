@@ -20,8 +20,10 @@ init-smoke:
   script:
     - bash tests/init-smoke.sh
 
+# Warnings and errors only: the info-level findings (single-quoted GraphQL
+# variables and eval strings, A && ok || fail) are intentional.
 shellcheck:
   stage: test
   image: koalaman/shellcheck-alpine:v0.10.0
   script:
-    - shellcheck setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh
+    - shellcheck -S warning setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh
