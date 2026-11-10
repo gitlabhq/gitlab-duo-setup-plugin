@@ -71,6 +71,11 @@ echo "local edit" >> "$B/.claude/skills/gitlab-checks/SKILL.md"
 check "older skill version updated" 'diff -rq "$KIT/skills/gitlab-checks" "$B/.agents/skills/gitlab-checks"'
 check "locally modified skill kept" 'grep -q "local edit" "$B/.claude/skills/gitlab-checks/SKILL.md"'
 
+echo "Missing dependencies"
+P="$WORK/bin"; mkdir "$P"; for t in bash dirname uname git sed; do ln -s "$(command -v "$t")" "$P/$t"; done
+out="$(PATH="$P" bash "$SETUP" check group acme 2>&1 || true)"
+check "names the missing tool and how to install it" 'printf "%s" "$out" | grep -q "missing dependency: glab" && printf "%s" "$out" | grep -q "gitlab-org/cli#installation" && printf "%s" "$out" | grep -q "glab auth login"'
+
 echo "install.sh piped to bash"
 S="$WORK/kit-src"; cp -R "$KIT" "$S"; rm -rf "$S/.git"; new_repo "$S" "https://gitlab.example.com/kit.git"
 git -C "$S" add -A && git -C "$S" commit -q -m kit

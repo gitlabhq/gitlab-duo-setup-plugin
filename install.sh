@@ -17,7 +17,14 @@ main() {
   local dir="${AGENTIC_ENG_CONFIG_DIR:-$HOME/.agentic-eng-config}"
   local ref="${AGENTIC_ENG_CONFIG_REF:-}"
 
-  command -v git >/dev/null 2>&1 || { echo "error: missing dependency: git" >&2; exit 1; }
+  if ! command -v git >/dev/null 2>&1; then
+    echo "error: missing dependency: git" >&2
+    if command -v brew >/dev/null 2>&1; then echo "  install: brew install git" >&2
+    elif [ "$(uname -s)" = Darwin ]; then echo "  install: xcode-select --install" >&2
+    else echo "  install: https://git-scm.com/downloads" >&2
+    fi
+    exit 1
+  fi
 
   if [ -d "$dir/.git" ]; then
     git -C "$dir" fetch -q --depth 1 origin "${ref:-HEAD}"

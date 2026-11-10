@@ -69,8 +69,11 @@ admin step (section 1).
 and passes its arguments to `setup.sh`. Read it first if you prefer: it is 40
 lines. Without arguments it only installs or updates the kit.
 
-Requirements: `bash`, `git`, `glab` (`glab auth login`), `jq`, and `curl`. On
-Windows, use WSL or Git Bash.
+Requirements: `bash`, `git` and `curl`, plus `jq` for `init` if the
+repository already has MCP config. The admin commands also need `glab`
+(`glab auth login`) and `jq`. The scripts don't install anything: a missing
+tool stops the command with the install command for your machine, and `doctor`
+lists what's missing. On Windows, use WSL or Git Bash.
 
 ## 1. Admin: turn it on for a group (once)
 

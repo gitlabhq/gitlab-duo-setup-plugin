@@ -43,7 +43,34 @@ DRY_RUN=0 YES=0 FORCE=0 HOST="" OWNERS=""
 
 usage() { sed -n '2,/^[^#]/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 1; }
 die() { echo "error: $*" >&2; exit 1; }
-need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
+need() { # need <tool>: exits with an install hint when the tool is missing
+  command -v "$1" >/dev/null 2>&1 && return 0
+  echo "error: missing dependency: $1" >&2; install_hint "$1" "  " >&2; exit 1
+}
+
+install_hint() { # install_hint <tool> <indent>: how to install the tool on this machine
+  local t="$1" i="$2" cmd="" url=""
+  case "$t" in
+    git)  url="https://git-scm.com/downloads" ;;
+    glab) url="https://gitlab.com/gitlab-org/cli#installation" ;;
+    jq)   url="https://jqlang.org/download/" ;;
+    curl) url="https://curl.se/download.html" ;;
+  esac
+  if command -v brew >/dev/null 2>&1; then cmd="brew install $t"
+  elif [ "$t" = git ] && [ "$(uname -s)" = Darwin ]; then cmd="xcode-select --install"
+  elif [ "$t" != glab ]; then # glab isn't in most distributions' default repositories
+    if command -v apt-get >/dev/null 2>&1; then cmd="sudo apt-get install -y $t"
+    elif command -v dnf >/dev/null 2>&1; then cmd="sudo dnf install -y $t"
+    elif command -v apk >/dev/null 2>&1; then cmd="apk add $t"
+    fi
+  fi
+  if [ -n "$cmd" ]; then
+    echo "${i}install: $cmd"
+    [ -z "$url" ] || echo "${i}or see:  $url"
+  elif [ -n "$url" ]; then echo "${i}install: $url"
+  fi
+  [ "$t" != glab ] || echo "${i}then:    glab auth login${HOST:+ --hostname $HOST}"
+}
 enc() { printf '%s' "$1" | jq -sRr @uri; }
 hr() { printf '\n%s\n' "────────────────────────────────────────────────────────"; }
 say() { printf '  %-44s %s\n' "$1" "$2"; }
@@ -578,7 +605,9 @@ doctor() {
   if [ -n "$host" ]; then ok "origin is on $host"; else fail "no origin remote; pass --host"; host=gitlab.com; fi
   path="$(git remote get-url origin 2>/dev/null | sed -E 's#^[a-z+]+://[^/]+/##; s#^[^@]+@[^:]+:##; s#\.git$##')"
 
-  for f in glab jq curl; do command -v "$f" >/dev/null 2>&1 && ok "$f installed" || fail "$f not installed"; done
+  for f in glab jq curl; do
+    if command -v "$f" >/dev/null 2>&1; then ok "$f installed"; else fail "$f not installed"; install_hint "$f" "        "; fi
+  done
   if command -v glab >/dev/null 2>&1; then
     glab auth status --hostname "$host" >/dev/null 2>&1 && ok "glab authenticated to $host" ||
       fail "glab not authenticated to $host: glab auth login --hostname $host"
