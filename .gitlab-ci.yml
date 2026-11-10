@@ -1,0 +1,22 @@
+# CI for the demo app.
+#
+# - `test` must pass on main so the default branch is green until a demo
+#   scenario breaks it on purpose (see demo/break-main.sh).
+# - The SAST template scans every pipeline. On the default branch, a
+#   Critical/High finding starts SAST False Positive Detection, and then
+#   Agentic Vulnerability Resolution (both Ultimate). If you enable scanning
+#   with a security configuration profile instead, remove the include below
+#   so jobs are not duplicated.
+
+stages:
+  - test
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
+test:
+  stage: test
+  image: python:3.12
+  script:
+    - pip install -r requirements.txt
+    - pytest -q
