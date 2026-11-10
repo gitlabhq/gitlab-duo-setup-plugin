@@ -1,13 +1,21 @@
-# Recommended GitLab configuration for agentic engineering — demo
+# GitLab configuration for agentic engineering
 
 Push from your coding agent and walk away. GitLab reviews the merge request,
 repairs the broken pipeline, triages the SAST finding and opens the fix. Come
 back, ask your agent what happened, and it picks up every finding without
 re-running anything.
 
-This repository is the working example: a small Flask app, the GitLab
-configuration that makes the loop run, two skills that teach Claude Code, Codex
-and Cursor to read the results, a setup script, and the demo scenarios.
+This kit sets that up in your own groups and projects, for developers using
+Claude Code, Codex or Cursor:
+
+- **`setup.sh`** turns on the GitLab Duo Agent Platform settings for a group and
+  its projects, installs the configuration files into a repository, and
+  connects and checks developers' clients.
+- **Two skills** (`gitlab-checks`, `gitlab-recommended-config`) teach the
+  coding agent to read what GitLab did, act on it, and explain why a flow
+  didn't run.
+- **Templates** for `AGENTS.md`, GitLab Duo review instructions and flow
+  configuration, CODEOWNERS, and MCP config for each client.
 
 ```
 developer ──push──▶ GitLab ──────────────────────────────▶ results on the MR
@@ -17,110 +25,122 @@ developer ──push──▶ GitLab ──────────────�
    └──── coding agent + gitlab-checks skill reads, acts, verifies ◀┘
 ```
 
-## How the configuration is organized
+> **Support status.** This kit is provided as-is, without an SLA, and is not
+> covered by GitLab Support. Issues and merge requests are welcome. GitLab Duo
+> and the features it configures are supported as usual.
 
-**Step 1 — GitLab runs the checks (configure once per group and project)**
+## What you get on each tier
 
 | When | Flow | Tier |
 |---|---|---|
+| An MR is created | Code Review (follow-up review on every push), Recommend Reviewers, Security Review | Code Review: Free (with GitLab Credits), Premium, Ultimate. Security Review: Ultimate |
+| A pipeline fails | Fix CI/CD Pipeline: suggestions on an MR, a repair MR on the default branch | Free (with GitLab Credits), Premium, Ultimate |
+| The default branch is scanned | SAST False Positive Detection, then Resolve SAST Vulnerability | Ultimate |
 | Planning | Generate Workplan | Premium, Ultimate |
-| An MR is created | Code Review (follow-up review on every push), Recommend Reviewers, Security Review | Code Review: Free (credits), Premium, Ultimate. Security Review: Ultimate |
-| A pipeline fails | Fix CI/CD Pipeline, started by a trigger on pipeline failure | Free (credits), Premium, Ultimate |
-| The default branch is scanned | SAST False Positive Detection, then Agentic Vulnerability Resolution | Ultimate |
 
-Guardrails are unchanged: protected branches and required approvals apply to every
-MR a flow opens.
+Flows use GitLab Credits. Each review, follow-up review and pipeline repair is a
+flow run. To reduce volume, exclude merge requests in
+`.gitlab/duo/mr-review-automated-rules.yaml`.
 
-**Step 2 — the developer's agent reads the results**
+Protected branches and required approvals apply to every MR a flow opens.
 
-| Piece | Where |
-|---|---|
-| GitLab MCP server | `https://<host>/api/v4/mcp`; see `docs/clients.md` |
-| Client MCP config | `.mcp.json` (Claude Code), `.codex/config.toml` (Codex), `.cursor/mcp.json` (Cursor) |
-| Code owners | `.gitlab/CODEOWNERS`: Maintainer review for CI, Duo, agent and MCP config |
-| `gitlab-checks` skill | `.agents/skills/gitlab-checks/` (copy in `.claude/skills/`) |
-| `gitlab-recommended-config` skill | `.agents/skills/gitlab-recommended-config/` |
-| Instructions | `AGENTS.md` (Codex, Cursor, GitLab Duo flows), `CLAUDE.md` (imports it) |
-| Review guidance | `.gitlab/duo/mr-review-instructions.yaml` (Code Review Flow does not read AGENTS.md) |
-| Flow runtime | `.gitlab/duo/agent-config.yml` |
+Requires GitLab with the Duo Agent Platform available; the kit is written
+against GitLab 19.6. On older versions, `setup.sh` reports settings it can't
+find as "not available" and skips them. Self-Managed and Dedicated need a few
+extra steps: `docs/self-managed.md`.
 
-## Quick start
-
-**Admin (once).** Owner on the top-level group, Maintainer on the project.
+## Get the kit
 
 ```
-glab auth login
-bash setup/setup.sh check  group   <top-level-group>
-bash setup/setup.sh apply  group   <top-level-group>
-bash setup/setup.sh apply  project <group>/<project>
-bash setup/setup.sh profiles       <top-level-group>          # Ultimate
-bash setup/setup.sh attach <profile-gid> <group>/<project>    # Ultimate
+git clone <kit-repository-url> gitlab-agentic-kit
 ```
 
-The script prints the two things it does not automate yet (selecting the flows
-for the group and creating the fix-pipeline trigger) with the exact settings
-path. See "Status" below.
+Requirements: `bash`, `git`, `glab` (`glab auth login`), `jq`, and `curl` for
+`doctor`. On Windows, use WSL or Git Bash.
 
-Before relying on `.gitlab/CODEOWNERS`, replace `@your-group/maintainers`
-with a real group and turn on "Require approval from code owners" for `main`.
-The MCP config files decide where agents send their GitLab OAuth token, so an
-unreviewed change to them is a credential risk.
+## 1. Admin: turn it on for a group (once)
 
-**Developer.** Clone and open Claude Code, Codex or Cursor. The GitLab MCP
-server is already configured for the repository; approve OAuth on first use
-(`docs/clients.md`, including Self-Managed). Then ask:
+Owner of the top-level group, Maintainer of the projects.
 
-> Is this project on the recommended configuration?
+```
+KIT=~/gitlab-agentic-kit/setup/setup.sh
+
+$KIT check group <top-level-group>
+$KIT apply group <top-level-group> --dry-run    # shows what would change
+$KIT apply group <top-level-group>              # asks before changing anything
+
+$KIT apply all-projects <top-level-group> --dry-run
+$KIT apply all-projects <top-level-group>       # or: apply project <group/project>
+```
+
+`apply` saves the previous values to `setup-backup-<time>.json`;
+`$KIT restore <file>` puts them back. It also creates the `pipeline::broken`
+label that repair MRs use.
+
+Two steps are not automated yet; `apply` prints both with the settings path:
+
+1. Select the foundational flows for the group (Settings > GitLab Duo).
+2. Create the Fix CI/CD Pipeline trigger in each project (AI > Triggers).
+
+On Ultimate, attach the Triage and Remediation scan profile:
+`$KIT profiles <group>`, then `$KIT attach <profile-gid> <group/project>`.
+
+## 2. Each project: install the files (once, then on updates)
+
+Run in the project's repository, then review and commit:
+
+```
+cd <your-project>
+$KIT init --owners @<group>/<maintainers> --dry-run
+$KIT init --owners @<group>/<maintainers>
+git status && git diff
+```
+
+| File | What it is | If it already exists |
+|---|---|---|
+| `AGENTS.md` | How work flows through GitLab, and rules for fix MRs | The GitLab section is added between markers; the rest is yours |
+| `CLAUDE.md` | Imports `AGENTS.md` for Claude Code | Left alone; init tells you to add `@AGENTS.md` |
+| `.gitlab/duo/agent-config.yml` | Dependency setup for flows, detected from your repo | Kept |
+| `.gitlab/duo/mr-review-instructions.yaml` | Guidance for Duo Code Review | Kept |
+| `.gitlab/duo/mr-review-automated-rules.yaml` | MRs automatic review skips | Kept |
+| `CODEOWNERS` | Maintainer review for CI, Duo, agent and MCP config | A section is added between markers |
+| `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml` | GitLab MCP server for Claude Code, Cursor, Codex, on your host | GitLab server added; other servers kept |
+| `.agents/skills/`, `.claude/skills/` | The two skills | Updated when the kit's version is newer; local edits kept |
+
+Then turn on "Require approval from code owners" for the default branch. The
+MCP config decides where agents send their GitLab OAuth token, so changes to it
+should be reviewed. Details and customization: `docs/customizing.md`.
+
+## 3. Developers: connect (once per machine)
+
+In a project that has run `init`, open Claude Code, Codex or Cursor and approve
+the GitLab sign-in. That's it. To check everything:
+
+```
+$KIT doctor
+```
+
+For projects without the committed config, `$KIT connect` adds the GitLab
+server to your user-level config for each installed client. Per-client detail:
+`docs/clients.md`.
+
+Then ask your agent:
 
 > What's the status of my MR?
 
-## Demo scenarios
+> Is this project on the recommended configuration?
 
-| Scenario | Script | What you should see |
-|---|---|---|
-| 1. Push, then close the IDE | `demo/seed-mr.sh` | Code Review threads; pipeline fails on a seeded off-by-one; Fix CI/CD Pipeline posts a suggestion |
-| 2. Return to the agent | ask "What's the status of my MR?" | One report; nothing re-run; fix, push, follow-up review, threads resolved |
-| 3a. Main-branch repair | `demo/break-main.sh`, then merge it | Main fails; a `[FixPipeline]` MR opens, labeled `main::broken`, awaiting approval |
-| 3b. SAST remediation | `demo/seed-sast.sh`, then merge it | FP assessment on the SQL injection finding; a fix MR with a confidence score |
+## Docs
 
-The full shot list for the video is in `demo/demo-script.md`.
-
-The demo scripts plant bugs and a SQL injection on purpose. Run them only in a
-private copy of this repository; see `SECURITY.md`.
-
-## When something doesn't run
-
-`docs/troubleshooting.md` is organized by symptom. Self-Managed and Dedicated
-setup is in `docs/self-managed.md`.
-
-## Status
-
-| Item | State |
+| | |
 |---|---|
-| Project-level settings via REST (`setup.sh apply project`) | Uses documented fields; run against a live instance to confirm |
-| Group Duo/Agent Platform/MCP via REST (`setup.sh apply group`) | Uses documented fields; run to confirm |
-| Security profiles list/attach via GraphQL | Uses documented mutation; run to confirm |
-| Selecting the seven flows for the group | Manual for now; `aiCatalogItemConsumerCreate` is the documented mechanism, item ids to look up |
-| Fix-pipeline trigger creation | Manual for now; `aiFlowTriggerCreate` is the documented mechanism, event-type code to confirm |
-| `gitlab-checks` on Claude Code / Codex / Cursor | Not yet run; see `docs/validation-checklist.md` |
-| Committed MCP config picked up per client | Not yet run; checklist C0, E9 |
-| Open MCP questions (FP score field, Security Review output, automatic-session visibility) | Listed in the checklist, section E |
-
-Nothing in this repository has been validated on a live GitLab instance yet.
-Treat `docs/validation-checklist.md` as the first task.
-
-## Development
-
-```
-pip install -r requirements.txt
-make test
-make sync-skills   # after editing anything under .agents/skills/
-make check-skills  # what the skills-in-sync CI job runs
-```
-
-Keep `main` free of planted vulnerabilities; the demo scripts add them on
-branches. When you change a skill, bump `metadata.version` in its `SKILL.md`
-and add an entry to `CHANGELOG.md`.
+| `docs/clients.md` | Connecting Claude Code, Codex and Cursor |
+| `docs/customizing.md` | What `init` installs, managed sections, updating the kit |
+| `docs/self-managed.md` | Self-Managed and Dedicated |
+| `docs/troubleshooting.md` | When a flow doesn't run, or the client won't connect |
+| `examples/inventory/` | A small Flask app to try the whole loop in a demo project |
+| `SECURITY.md` | Reporting issues, and what to protect |
+| `CHANGELOG.md` | Changes by version |
 
 ## License
 

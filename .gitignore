@@ -4,3 +4,4 @@ __pycache__/
 inventory.db
 .venv/
 .DS_Store
+setup-backup-*.json

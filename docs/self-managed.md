@@ -1,8 +1,7 @@
 # Self-Managed and Dedicated
 
-Everything in this repository works on GitLab Self-Managed and Dedicated, with
-the extra steps below. Most setup problems show up here, so record what you hit
-in `docs/validation-checklist.md`.
+The kit works on GitLab Self-Managed and Dedicated, with the extra steps
+below.
 
 ## Admin, once per instance
 
@@ -25,21 +24,20 @@ in `docs/validation-checklist.md`.
 ## Per group and project
 
 Same as GitLab.com: `glab auth login --hostname <host>`, then the `setup.sh`
-commands in the README. `setup.sh` uses whatever host `glab` is
+commands in the README. The admin commands use the host `glab` is
 authenticated to.
 
-## Developers
+## Projects and developers
 
-The committed client config points at gitlab.com. Point it at your host:
+`setup.sh init` writes the host of the repository's `origin` remote into the
+MCP config, so committed config already points at your instance. If `origin`
+uses an SSH alias or a different SSH hostname, pass `--host <web host>`.
 
-| Client | How |
-|---|---|
-| Claude Code | `export GITLAB_MCP_URL=https://<host>/api/v4/mcp` (in your shell profile). `.mcp.json` picks it up. |
-| Codex | Edit `url` in `.codex/config.toml`, or add the server to `~/.codex/config.toml` (`docs/clients.md`). |
-| Cursor | Edit `url` in `.cursor/mcp.json`. For the marketplace plugin, edit its bundled `.mcp.json` in Cursor's plugin cache, and check it again after plugin updates. |
+`setup.sh connect` does the same for user-level config, and `setup.sh doctor`
+checks that the MCP endpoint answers on your host.
 
-If you fork this repository for an internal template, commit your host in the
-Codex and Cursor files so developers don't have to edit them.
+For the Cursor marketplace plugin, edit its bundled `.mcp.json` in Cursor's
+plugin cache to point at your host, and check it again after plugin updates.
 
 Legacy personal access tokens are rejected by the MCP server. Use OAuth, or a
 fine-grained token with the MCP tool Execute permission.

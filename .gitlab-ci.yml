@@ -1,30 +1,27 @@
-# CI for the demo app.
-#
-# - `test` must pass on main so the default branch is green until a demo
-#   scenario breaks it on purpose (see demo/break-main.sh).
-# - The SAST template scans every pipeline. On the default branch, a
-#   Critical/High finding starts SAST False Positive Detection, and then
-#   Agentic Vulnerability Resolution (both Ultimate). If you enable scanning
-#   with a security configuration profile instead, remove the include below
-#   so jobs are not duplicated.
+# CI for the kit itself. The example project has its own .gitlab-ci.yml, used
+# when you copy it into a demo project.
 
 stages:
   - test
 
-include:
-  - template: Jobs/SAST.gitlab-ci.yml
-
-# Claude Code reads .claude/skills/, Codex and Cursor read .agents/skills/.
-# Fail fast if the copies drift.
-skills-in-sync:
-  stage: test
-  image: alpine:3.20
-  script:
-    - diff -r .agents/skills .claude/skills || { echo "Skills out of sync; run make sync-skills"; exit 1; }
-
-test:
+example-tests:
   stage: test
   image: python:3.12
   script:
+    - cd examples/inventory
     - pip install -r requirements.txt
     - pytest -q
+
+init-smoke:
+  stage: test
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash git jq
+  script:
+    - bash tests/init-smoke.sh
+
+shellcheck:
+  stage: test
+  image: koalaman/shellcheck-alpine:v0.10.0
+  script:
+    - shellcheck setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh

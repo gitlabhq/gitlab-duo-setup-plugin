@@ -1,0 +1,8 @@
+# Project-scoped Codex configuration for the GitLab MCP server.
+# Check that your Codex version reads project config; if it doesn't, run
+# `setup.sh connect codex` to add the server to ~/.codex/config.toml instead.
+# Then run: codex mcp login GitLab
+
+[mcp_servers.GitLab]
+url = "https://{{HOST}}/api/v4/mcp"
+http_headers = { "X-Gitlab-Enabled-Mcp-Server-Toolsets" = "core,merge_requests,repository,ci,duo_agent_platform,code_security" }

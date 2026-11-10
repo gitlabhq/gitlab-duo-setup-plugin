@@ -1,0 +1,43 @@
+# Custom review instructions for GitLab Duo Code Review Flow.
+#
+# Code Review Flow does NOT read AGENTS.md or SKILL.md. Review guidance for
+# the AI reviewer lives here. These are guidance, not enforced policy.
+# Reference: https://docs.gitlab.com/user/duo_agent_platform/customize/review_instructions/
+#
+# Add rules for your own languages and conventions below. For example:
+#
+#   - name: Python application code
+#     fileFilters:
+#       - "src/**/*.py"
+#     instructions: |
+#       1. Never interpolate user input into SQL; use parameterized queries.
+#       2. Every new endpoint needs a test.
+
+instructions:
+  - name: Agent-authored changes
+    fileFilters:
+      - "**/*"
+    instructions: |
+      1. Many merge requests in this project are written by coding agents.
+         Check that the change does what the merge request description says
+         and nothing more. Flag scope creep.
+      2. Prefer one clear finding per thread, with a concrete suggestion.
+         Replies in your threads may come from an agent as well, so make each
+         finding independently actionable.
+
+  - name: CI, Duo and agent configuration
+    fileFilters:
+      - ".gitlab-ci.yml"
+      - ".gitlab/duo/**/*"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".agents/**/*"
+      - ".claude/**/*"
+      - ".mcp.json"
+      - ".cursor/**/*"
+      - ".codex/**/*"
+    instructions: |
+      1. Changes here affect what runs automatically for every merge request,
+         what coding agents are told to do, or which server they send their
+         GitLab credentials to. Ask for a human reviewer with the Maintainer
+         role, and flag any change to an MCP server URL.

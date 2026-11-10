@@ -1,18 +1,14 @@
-.PHONY: test sync-skills check-skills check
+.PHONY: check test smoke lint
+
+check: test smoke lint
 
 test:
-	pytest -q
+	cd examples/inventory && pytest -q
 
-# Codex and Cursor read .agents/skills/. Claude Code reads .claude/skills/.
-# Keep one source of truth and copy.
-sync-skills:
-	mkdir -p .claude/skills
-	rm -rf .claude/skills/gitlab-checks .claude/skills/gitlab-recommended-config
-	cp -R .agents/skills/gitlab-checks .claude/skills/
-	cp -R .agents/skills/gitlab-recommended-config .claude/skills/
+smoke:
+	bash tests/init-smoke.sh
 
-check-skills:
-	diff -r .agents/skills .claude/skills
-
-check:
-	bash setup/setup.sh check project "$(PROJECT)"
+lint:
+	@if command -v shellcheck >/dev/null 2>&1; then \
+	  shellcheck setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh; \
+	else echo "shellcheck not installed, skipped"; fi

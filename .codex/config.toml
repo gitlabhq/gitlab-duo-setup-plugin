@@ -1,7 +1,0 @@
-# Project-scoped Codex configuration. Codex reads it only after you trust this
-# project. Self-Managed or Dedicated: replace gitlab.com with your host.
-# Then run: codex mcp login GitLab
-
-[mcp_servers.GitLab]
-url = "https://gitlab.com/api/v4/mcp"
-http_headers = { "X-Gitlab-Enabled-Mcp-Server-Toolsets" = "core,merge_requests,repository,ci,duo_agent_platform,code_security" }

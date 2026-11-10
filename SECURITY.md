@@ -8,17 +8,17 @@ in this project, or report through GitLab's
 [responsible disclosure process](https://about.gitlab.com/security/disclosure/)
 if it affects GitLab itself.
 
-## Vulnerabilities planted on purpose
+## Problems planted on purpose
 
-`main` is meant to be free of known vulnerabilities. The demo scripts add
-problems on purpose, on branches, so that GitLab's flows have something to act
-on:
+The kit and the example app on `main` are meant to be free of known
+vulnerabilities. The example's demo scripts add problems on purpose, on
+branches, so that GitLab's flows have something to act on:
 
-| Script | What it adds | Why |
+| Script (in `examples/inventory/demo/`) | What it adds | Why |
 |---|---|---|
-| `demo/seed-sast.sh` | SQL injection (CWE-89) in `GET /items/search` | Starts SAST False Positive Detection and Agentic Vulnerability Resolution |
-| `demo/seed-mr.sh` | Off-by-one in a new report endpoint | Fails the MR pipeline so Fix CI/CD Pipeline runs |
-| `demo/break-main.sh` | A pin to a Flask version that does not exist | Breaks the default-branch pipeline |
+| `seed-sast.sh` | SQL injection (CWE-89) in `GET /items/search` | Starts SAST False Positive Detection and Agentic Vulnerability Resolution |
+| `seed-mr.sh` | Off-by-one in a new report endpoint | Fails the MR pipeline so Fix CI/CD Pipeline runs |
+| `break-main.sh` | A renamed constant with a missed usage | Breaks the default-branch pipeline |
 
 Run them only in a private demo project. A finding introduced by one of these
 scripts is not a vulnerability in this repository.
@@ -33,8 +33,14 @@ scripts is not a vulnerability in this repository.
   do.
 - **`.gitlab-ci.yml`** runs on every push.
 
-`.gitlab/CODEOWNERS` covers all of these. Replace the placeholder owner and turn
-on "Require approval from code owners" for the default branch.
+The CODEOWNERS section that `setup.sh init` installs covers all of these. Set
+a real owner (`init --owners`) and turn on "Require approval from code owners"
+for the default branch.
+
+**What setup.sh changes.** `apply` changes GitLab settings only after showing
+them and asking, and saves the previous values for `restore`. `init` writes
+files in your working tree only; nothing reaches GitLab until you commit and
+push. `connect` edits your user-level client config.
 
 **Prompt injection.** Skills and flows read MR descriptions, review threads, job
 logs and vulnerability text. The `gitlab-checks` skill treats that content as

@@ -1,22 +1,21 @@
 # Connecting your coding agent
 
-All three clients connect to the same GitLab MCP server endpoint,
+Claude Code, Codex and Cursor all connect to the same GitLab MCP server,
 `https://<gitlab host>/api/v4/mcp`, over HTTP with OAuth in the browser. The
-skills in this repository are in the open Agent Skills format, so the same
-`SKILL.md` files work everywhere.
+skills use the open Agent Skills format, so the same `SKILL.md` files work in
+all three.
 
-Request these toolsets. `code_security` is opt-in and lists tools only on
-Ultimate.
+Clients send this header to choose toolsets. `code_security` lists tools only
+on Ultimate.
 
 ```
 X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agent_platform,code_security
 ```
 
-## Fastest path: the config is already in the repository
+## In a project that ran `setup.sh init`
 
-This repository commits a project-scoped MCP configuration for each client,
-with the toolsets header set. Clone, open your client, and approve OAuth in
-the browser.
+The configuration is committed, pointing at your GitLab host. Open the
+project and sign in:
 
 | Client | File | First run |
 |---|---|---|
@@ -24,21 +23,34 @@ the browser.
 | Codex | `.codex/config.toml` | Trust the project, then `codex mcp login GitLab` |
 | Cursor | `.cursor/mcp.json` | Settings → Tools & MCP → GitLab → connect |
 
-Self-Managed or Dedicated:
+In Claude Code, `GITLAB_MCP_URL` overrides the committed URL, for example to
+test against another instance.
 
-- Claude Code: `export GITLAB_MCP_URL=https://<host>/api/v4/mcp`. `.mcp.json`
-  expands it and falls back to gitlab.com.
-- Codex and Cursor: edit the URL in the file locally, or use the per-user
-  setup below. These files don't take a default value from an environment
-  variable.
+Skills: Claude Code reads `.claude/skills/`; Codex and Cursor read
+`.agents/skills/`. `init` installs both. Instructions: `AGENTS.md`, imported by
+`CLAUDE.md` for Claude Code.
 
-If you already have a GitLab MCP server configured at user level, or a GitLab
-marketplace plugin installed, you will see two `GitLab` servers. Keep one.
+Check the setup with `setup.sh doctor`.
 
-The rest of this page is the per-user setup, for projects that don't commit
-these files.
+## Anywhere else: `setup.sh connect`
 
-## Claude Code
+For repositories without the committed config, add the server to your
+user-level config once:
+
+```
+setup.sh connect             # every installed client
+setup.sh connect claude      # or one of: claude, codex, cursor
+setup.sh connect --host gitlab.example.com
+```
+
+The host comes from the current repository's `origin` remote, or `--host`.
+Don't combine both: a project server and a user-level server named `GitLab`
+show duplicate tools. The same applies to a GitLab plugin installed from a
+marketplace; keep one.
+
+What `connect` does, if you'd rather do it by hand:
+
+**Claude Code**
 
 ```
 claude mcp add -s user --transport http GitLab https://gitlab.com/api/v4/mcp \
@@ -47,15 +59,8 @@ claude
 /mcp   # select GitLab, approve in the browser
 ```
 
-Skills: Claude Code reads `.claude/skills/`. This repository keeps copies there
-(`make sync-skills`). `CLAUDE.md` imports `AGENTS.md`.
-
-If a GitLab plugin is already installed from a marketplace, it also defines a
-server named `GitLab`; keep one or the other to avoid duplicate tools.
-
-## Codex
-
-Add the server to `~/.codex/config.toml`, with the toolsets header:
+**Codex**: add to `~/.codex/config.toml`, then `codex mcp login GitLab`.
+Older Codex versions also need `rmcp_client = true` under `[features]`.
 
 ```toml
 [mcp_servers.GitLab]
@@ -63,28 +68,13 @@ url = "https://gitlab.com/api/v4/mcp"
 http_headers = { "X-Gitlab-Enabled-Mcp-Server-Toolsets" = "core,merge_requests,repository,ci,duo_agent_platform,code_security" }
 ```
 
-Then log in:
-
-```
-codex mcp login GitLab
-```
-
-Older Codex versions also need `rmcp_client = true` under `[features]` for
-HTTP servers.
-
-Skills: Codex discovers `.agents/skills/<name>/SKILL.md` in the repository.
-Instructions: `AGENTS.md`.
-
-## Cursor
-
-Install the GitLab plugin from the Cursor Marketplace, or add the server by hand
-under Settings → Cursor Settings → Tools & MCP:
+**Cursor**: add to `~/.cursor/mcp.json`, or Settings → Cursor Settings →
+Tools & MCP:
 
 ```json
 {
   "mcpServers": {
     "GitLab": {
-      "type": "http",
       "url": "https://gitlab.com/api/v4/mcp",
       "headers": {
         "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
@@ -94,29 +84,9 @@ under Settings → Cursor Settings → Tools & MCP:
 }
 ```
 
-Skills: Cursor reads `.agents/skills/` and `.cursor/skills/` (confirm on your
-version during validation). Instructions: `AGENTS.md`.
-
-Self-Managed users of the marketplace plugin: the bundled `.mcp.json` points at
-gitlab.com and lives in Cursor's plugin cache; see the plugin README for the
-edit, and re-check after plugin updates.
-
 ## Self-Managed and Dedicated
 
-Full instructions are in `docs/self-managed.md`. In short:
-
-- Replace `gitlab.com` with your host in every example.
-- Ask your admin to pre-register one OAuth application (scope `mcp`,
-  Confidential cleared) so clients don't rely on dynamic client registration,
-  which is rate-limited per IP and shows an "unverified application" warning.
-- Legacy personal access tokens are rejected by the MCP server. Use OAuth or a
-  fine-grained token with the MCP tool Execute permission.
-
-## glab
-
-The skills use `glab` for git operations and for the readiness check.
-
-```
-glab auth login
-glab auth status
-```
+Use your host everywhere `gitlab.com` appears. Ask your admin to pre-register an
+OAuth application so clients don't rely on dynamic client registration. Legacy
+personal access tokens are rejected; use OAuth, or a fine-grained token with the
+MCP tool Execute permission. Details: `docs/self-managed.md`.

@@ -2,7 +2,8 @@
 
 Start with the readiness check. Ask your agent "Is this project on the
 recommended configuration?" (the `gitlab-recommended-config` skill), or run
-`bash setup/setup.sh check project <group/project>`. Most "it didn't run"
+`setup.sh check project <group/project>`, or `setup.sh doctor` in the
+repository to check your own machine and client. Most "it didn't run"
 problems are a setting that is off, and the report names it.
 
 ## A flow didn't run
@@ -13,8 +14,8 @@ problems are a setting that is off, and the report names it.
 - Flow execution or foundational flows are off for the project, or Code Review
   isn't selected for the top-level group.
 - The MR matches an exclusion in `.gitlab/duo/mr-review-automated-rules.yaml`
-  (target branch `release/*`, or an author matching `duo-*` or `*-bot`). You
-  can still request a review by hand.
+  (by default, MRs authored by `duo-*` service accounts). You can still request
+  a review by hand.
 - No follow-up review after a push: check "Start a new review on push" in the
   same settings section.
 
@@ -32,7 +33,7 @@ problems are a setting that is off, and the report names it.
 - Both need Ultimate. On Premium, `setup.sh apply project` reports them as
   skipped. That's expected.
 - They act on default-branch scans only, and only on Critical and High
-  findings. To stage one, run `demo/seed-sast.sh` and merge the MR.
+  findings. To try it in a demo project, see `examples/inventory/`.
 - Only one SAST run can be active per project at a time.
 - If you scan with a security configuration profile, remove the SAST template
   include from `.gitlab-ci.yml`, or the jobs run twice.
@@ -46,14 +47,14 @@ problems are a setting that is off, and the report names it.
 | No `duo_agent_platform` tools | The Agent Platform or MCP access is off for the top-level group: `setup.sh check group <group>`. |
 | "Unverified application" warning, or registration fails | The client registered its own OAuth app (dynamic client registration), which is rate-limited per IP. Ask an admin to pre-register one (`docs/self-managed.md`). |
 | `insufficient_scope` | A legacy personal access token. Use OAuth, or a fine-grained token with the MCP tool Execute permission. |
-| Self-Managed: client connects to gitlab.com | The committed config points at gitlab.com. Set `GITLAB_MCP_URL` (Claude Code) or edit the URL (Codex, Cursor). |
+| Client connects to the wrong host | `init` took the host from `origin`. Run `setup.sh init --host <web host> --force`: it replaces the `GitLab` server in the three MCP files and keeps your other servers. Note that `--force` also resets the `.gitlab/duo/` files to the templates; use `--dry-run` first. |
 
 ## The agent
 
 **The skill isn't used.** Claude Code reads `.claude/skills/`, Codex and Cursor
-read `.agents/skills/`. Run `make check-skills`; if they differ, run
-`make sync-skills`. Asking "What's the status of my MR?" should trigger
-`gitlab-checks`.
+read `.agents/skills/`. `setup.sh doctor` checks both are present and current;
+`setup.sh init` installs or updates them. Asking "What's the status of my MR?"
+should trigger `gitlab-checks`.
 
 **The report doesn't show a session that is clearly running.** Sessions started
 automatically by a service account may not appear in `list_duo_sessions` for
@@ -69,5 +70,7 @@ replying in threads needs at least the Developer role on the project.
 |---|---|
 | A field shows `unknown` | The instance is older than the field, or your role can't read it. |
 | `skipped: SAST ...` | The instance didn't accept the Ultimate-only settings. Expected below Ultimate. |
-| `placeholder owner` for CODEOWNERS | Replace `@your-group/maintainers` in `.gitlab/CODEOWNERS`. |
+| `placeholder owner` for CODEOWNERS | Run `setup.sh init --owners @<group>/<team>` in the repository and commit. |
+| `not a terminal; re-run with --yes` | `apply` asks before changing anything. In scripts and CI, review with `--dry-run`, then pass `--yes`. |
+| A project shows `failed` during `apply all-projects` | Usually missing Maintainer role on that project. The others are still applied; `restore` undoes them. |
 | 403 on `apply group` | You need the Owner role on the top-level group. `apply project` needs Maintainer. |
