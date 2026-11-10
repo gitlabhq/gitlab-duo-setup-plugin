@@ -45,9 +45,9 @@ the commented example at the top of the file.
 ## Updating the kit
 
 ```
-cd ~/gitlab-agentic-kit && git pull
-cd <your-project> && ~/gitlab-agentic-kit/setup/setup.sh init --dry-run
-~/gitlab-agentic-kit/setup/setup.sh init
+cd <your-project>
+curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash -s -- init --dry-run
+curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash -s -- init
 ```
 
 `CHANGELOG.md` lists what changed. `setup.sh doctor` warns when a project's

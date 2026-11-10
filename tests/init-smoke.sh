@@ -71,5 +71,17 @@ echo "local edit" >> "$B/.claude/skills/gitlab-checks/SKILL.md"
 check "older skill version updated" 'diff -rq "$KIT/skills/gitlab-checks" "$B/.agents/skills/gitlab-checks"'
 check "locally modified skill kept" 'grep -q "local edit" "$B/.claude/skills/gitlab-checks/SKILL.md"'
 
+echo "install.sh piped to bash"
+S="$WORK/kit-src"; cp -R "$KIT" "$S"; rm -rf "$S/.git"; new_repo "$S" "https://gitlab.example.com/kit.git"
+git -C "$S" add -A && git -C "$S" commit -q -m kit
+export GITLAB_AGENTIC_KIT_REPO="file://$S" GITLAB_AGENTIC_KIT_DIR="$WORK/kit-installed"
+bash < "$KIT/install.sh" 2>/dev/null
+check "installs the kit" '[ -x "$GITLAB_AGENTIC_KIT_DIR/setup/setup.sh" ]'
+echo "# update" >> "$S/README.md" && git -C "$S" commit -q -am update
+C="$WORK/piped"; mkdir "$C"; new_repo "$C" "git@gitlab.example.com:acme/piped.git"
+(cd "$C" && bash -s -- init --owners @acme/maintainers < "$KIT/install.sh" >/dev/null 2>&1)
+check "updates the kit on the next run" 'grep -q "^# update" "$GITLAB_AGENTIC_KIT_DIR/README.md"'
+check "runs the setup command" 'grep -q "/.gitlab/duo/ *@acme/maintainers" "$C/.gitlab/CODEOWNERS"'
+
 echo
 [ "$fails" -eq 0 ] && echo "All checks passed." || { echo "$fails checks failed."; exit 1; }

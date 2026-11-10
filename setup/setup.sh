@@ -50,8 +50,12 @@ say() { printf '  %-44s %s\n' "$1" "$2"; }
 
 confirm() { # confirm <question>; exits unless the answer is yes
   [ "$YES" = 1 ] && return 0
-  [ -t 0 ] || die "not a terminal; re-run with --yes to apply"
-  local a; read -r -p "$1 [y/N] " a
+  local a in=/dev/stdin
+  if [ ! -t 0 ]; then # e.g. `curl ... | bash`: ask on the terminal instead
+    { : </dev/tty; } 2>/dev/null || die "not a terminal; re-run with --yes to apply"
+    in=/dev/tty
+  fi
+  read -r -p "$1 [y/N] " a <"$in"
   case "$a" in y|Y|yes) ;; *) echo "Nothing changed."; exit 0 ;; esac
 }
 

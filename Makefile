@@ -10,5 +10,5 @@ smoke:
 
 lint:
 	@if command -v shellcheck >/dev/null 2>&1; then \
-	  shellcheck -S warning setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh; \
+	  shellcheck -S warning install.sh setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh; \
 	else echo "shellcheck not installed, skipped"; fi

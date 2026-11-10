@@ -26,4 +26,4 @@ shellcheck:
   stage: test
   image: koalaman/shellcheck-alpine:v0.10.0
   script:
-    - shellcheck -S warning setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh
+    - shellcheck -S warning install.sh setup/setup.sh tests/init-smoke.sh examples/inventory/demo/*.sh

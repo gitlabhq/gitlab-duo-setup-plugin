@@ -10,9 +10,10 @@ scripts plant bugs and a SQL injection on purpose (see `../../SECURITY.md`).
 ## Set up
 
 ```
-KIT=~/gitlab-agentic-kit/setup/setup.sh
+curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash
+KIT=~/.gitlab-agentic-kit/setup/setup.sh
 
-cp -R ~/gitlab-agentic-kit/examples/inventory ~/inventory-demo
+cp -R ~/.gitlab-agentic-kit/examples/inventory ~/inventory-demo
 cd ~/inventory-demo
 git init -b main
 git remote add origin git@gitlab.com:<group>/inventory-demo.git

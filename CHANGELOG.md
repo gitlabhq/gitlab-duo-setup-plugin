@@ -9,6 +9,9 @@ are behind.
 
 - Packaged as a kit for your own groups and projects. The demo app moved to
   `examples/inventory/`.
+- `install.sh` installs or updates the kit and runs a `setup.sh` command, so
+  setup is one line: `curl -fsSL .../install.sh | bash -s -- init`. `apply`
+  asks for confirmation on the terminal when the script is piped.
 - `setup.sh init` installs the templates into a repository: managed sections in
   `AGENTS.md` and CODEOWNERS, dependency setup detected from the repository, MCP
   config on your host merged into existing files, both skills.

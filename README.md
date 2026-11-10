@@ -49,21 +49,36 @@ against GitLab 19.6. On older versions, `setup.sh` reports settings it can't
 find as "not available" and skips them. Self-Managed and Dedicated need a few
 extra steps: `docs/self-managed.md`.
 
-## Get the kit
+## Quick start
+
+In your project's repository, paste into a terminal:
 
 ```
-git clone <kit-repository-url> gitlab-agentic-kit
+curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash -s -- init --owners @<group>/<maintainers>
 ```
 
-Requirements: `bash`, `git`, `glab` (`glab auth login`), `jq`, and `curl` for
-`doctor`. On Windows, use WSL or Git Bash.
+Or paste into Claude Code, Codex or Cursor:
+
+> Set up this repository for the GitLab Duo Agent Platform: ask me which group should own agent and CI config, run `curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash -s -- init --dry-run --owners <that group>`, explain the plan, then run it without `--dry-run` and summarize `git diff`.
+
+Then review and commit the files (section 2), and open your agent to approve
+the GitLab sign-in (section 3). Group and project settings are a separate,
+admin step (section 1).
+
+`install.sh` puts the kit in `~/.gitlab-agentic-kit`, updates it on every run,
+and passes its arguments to `setup.sh`. Read it first if you prefer: it is 40
+lines. Without arguments it only installs or updates the kit.
+
+Requirements: `bash`, `git`, `glab` (`glab auth login`), `jq`, and `curl`. On
+Windows, use WSL or Git Bash.
 
 ## 1. Admin: turn it on for a group (once)
 
 Owner of the top-level group, Maintainer of the projects.
 
 ```
-KIT=~/gitlab-agentic-kit/setup/setup.sh
+curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash
+KIT=~/.gitlab-agentic-kit/setup/setup.sh
 
 $KIT check group <top-level-group>
 $KIT apply group <top-level-group> --dry-run    # shows what would change
