@@ -29,7 +29,7 @@ developer ──push──▶ GitLab ──────────────�
 > covered by GitLab Support. Issues and merge requests are welcome. GitLab Duo
 > and the features it configures are supported as usual.
 
-## What you get on each tier
+## What you can automate with GitLab + DAP
 
 | When | Flow | Tier |
 |---|---|---|
