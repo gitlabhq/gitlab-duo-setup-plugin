@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — GitLab configuration for agentic engineering
+# setup.sh — Agentic Engineering Configuration
 #
 # Admin: group Owner, project Maintainer
 #   setup.sh check   group        <top-level-group>
@@ -28,8 +28,8 @@ set -euo pipefail
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TOOLSETS="core,merge_requests,repository,ci,duo_agent_platform,code_security"
-MARK_BEGIN="BEGIN gitlab-agentic-engineering"
-MARK_END="END gitlab-agentic-engineering"
+MARK_BEGIN="BEGIN agentic-eng-config"
+MARK_END="END agentic-eng-config"
 PLACEHOLDER_OWNER="@REPLACE-ME/maintainers"
 FIX_LABEL="pipeline::broken"
 

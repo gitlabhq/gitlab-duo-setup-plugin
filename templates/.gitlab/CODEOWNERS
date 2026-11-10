@@ -1,8 +1,8 @@
-# BEGIN gitlab-agentic-engineering: managed by setup.sh init; edits between these markers are replaced on update
+# BEGIN agentic-eng-config: managed by setup.sh init; edits between these markers are replaced on update
 # Files that change what runs automatically, what agents are told to do, or
 # which server agents send their GitLab OAuth token to. Turn on "Require
 # approval from code owners" for the protected default branch.
-[Agentic engineering configuration]
+[Agentic Engineering Configuration]
 /.gitlab/duo/          {{OWNERS}}
 /AGENTS.md             {{OWNERS}}
 /CLAUDE.md             {{OWNERS}}
@@ -12,4 +12,4 @@
 /.cursor/              {{OWNERS}}
 /.codex/               {{OWNERS}}
 /.gitlab-ci.yml        {{OWNERS}}
-# END gitlab-agentic-engineering
+# END agentic-eng-config

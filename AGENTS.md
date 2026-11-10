@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is the GitLab agentic engineering kit: a setup script,
+This repository is the Agentic Engineering Configuration kit: a setup script,
 templates it installs into other repositories, two Agent Skills, and an example
 project. See `README.md` for what it does and `CONTRIBUTING.md` for rules.
 

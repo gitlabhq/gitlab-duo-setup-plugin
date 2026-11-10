@@ -1,4 +1,4 @@
-<!-- BEGIN gitlab-agentic-engineering: managed by setup.sh init; edits between these markers are replaced on update -->
+<!-- BEGIN agentic-eng-config: managed by setup.sh init; edits between these markers are replaced on update -->
 ## How work flows through GitLab
 
 GitLab runs checks on every push whether or not an agent is connected:
@@ -36,4 +36,4 @@ When opening a merge request as part of the Fix Pipeline flow:
   version that exists; do not remove the dependency.
 - If the same failure has already been fixed once and failed again, post a
   comment describing what you found instead of attempting another fix.
-<!-- END gitlab-agentic-engineering -->
+<!-- END agentic-eng-config -->

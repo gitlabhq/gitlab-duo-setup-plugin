@@ -16,7 +16,7 @@ see what it would do.
 ## Files you own and files init manages
 
 **Managed sections.** `AGENTS.md` and `CODEOWNERS` get a section between
-`BEGIN gitlab-agentic-engineering` and `END gitlab-agentic-engineering`
+`BEGIN agentic-eng-config` and `END agentic-eng-config`
 markers. Running `init` again replaces only that section. Write your own
 content outside the markers; edits inside them are lost on update. To stop
 updates, delete the markers along with the section.

@@ -79,7 +79,7 @@ this project. Tell the user which of the seven are present.
 - **Repository files**: check that `.gitlab/duo/agent-config.yml`,
   `.gitlab/duo/mr-review-instructions.yaml` and a CODEOWNERS file (`CODEOWNERS`,
   `docs/CODEOWNERS` or `.gitlab/CODEOWNERS`) exist on the default branch, and
-  that `AGENTS.md` contains the `BEGIN gitlab-agentic-engineering` section. If
+  that `AGENTS.md` contains the `BEGIN agentic-eng-config` section. If
   CODEOWNERS still names `@REPLACE-ME/maintainers`, report it as `placeholder`: no real owner is asked to review changes to the
   CI, Duo, agent or MCP configuration.
 - **Runner**: on GitLab Self-Managed, confirm Settings > General > GitLab Duo
@@ -99,15 +99,15 @@ this project. Tell the user which of the seven are present.
 | SAST vulnerability resolution (Ultimate) | ... | ... |
 | Group: Duo + Agent Platform + MCP | ... | ... |
 | Flows selected for the group | <n>/7 — missing: ... | Settings > GitLab Duo (top-level group) |
-| agent-config.yml / review instructions / AGENTS.md section | present / missing | `<kit>/setup/setup.sh init` in the repository, then commit |
-| CODEOWNERS for agent and CI config | present / missing / placeholder | `<kit>/setup/setup.sh init --owners @<group>/<team>`; require code owner approval on the default branch |
+| agent-config.yml / review instructions / AGENTS.md section | present / missing | `~/.agentic-eng-config/setup/setup.sh init` in the repository, then commit |
+| CODEOWNERS for agent and CI config | present / missing / placeholder | `~/.agentic-eng-config/setup/setup.sh init --owners @<group>/<team>`; require code owner approval on the default branch |
 
 Next: <the commands below that apply to the rows that are off>
 ```
 
 For the project-level rows (Maintainer role), give the user one command. With
-the GitLab agentic engineering kit, that is
-`<kit>/setup/setup.sh apply project <path>`: it shows the changes and asks
+Agentic Engineering Configuration installed, that is
+`~/.agentic-eng-config/setup/setup.sh apply project <path>`: it shows the changes and asks
 before applying, and `--dry-run` only shows them. Without the kit:
 
 ```

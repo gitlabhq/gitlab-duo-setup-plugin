@@ -25,7 +25,7 @@ new_repo "$A" "git@gitlab.example.com:acme/inventory.git"
 check "dry run writes nothing" '[ ! -e "$A/.mcp.json" ] && [ ! -e "$A/.agents" ]'
 (cd "$A" && bash "$SETUP" init --owners @acme/maintainers >/dev/null)
 check "AGENTS.md keeps the project section" 'grep -q "Flask inventory API" "$A/AGENTS.md"'
-check "AGENTS.md gets the GitLab section" 'grep -q "BEGIN gitlab-agentic-engineering" "$A/AGENTS.md"'
+check "AGENTS.md gets the GitLab section" 'grep -q "BEGIN agentic-eng-config" "$A/AGENTS.md"'
 check "CLAUDE.md imports AGENTS.md" 'grep -q "^@AGENTS.md" "$A/CLAUDE.md"'
 check "example review instructions kept" 'grep -q "Python application code" "$A/.gitlab/duo/mr-review-instructions.yaml"'
 check "agent-config detects pip" 'grep -q "  - pip install -r requirements.txt" "$A/.gitlab/duo/agent-config.yml"'
@@ -46,7 +46,7 @@ printf '{"mcpServers":{"Other":{"url":"https://example.com/mcp"}}}\n' > "$B/.mcp
 printf '# Ours\n' > "$B/CLAUDE.md"
 touch "$B/pnpm-lock.yaml"
 (cd "$B" && bash "$SETUP" init >/dev/null)
-check "own AGENTS.md content kept" 'grep -q "Use pnpm." "$B/AGENTS.md" && grep -q "BEGIN gitlab-agentic-engineering" "$B/AGENTS.md"'
+check "own AGENTS.md content kept" 'grep -q "Use pnpm." "$B/AGENTS.md" && grep -q "BEGIN agentic-eng-config" "$B/AGENTS.md"'
 check "section added to the existing CODEOWNERS" 'grep -q "@acme/everyone" "$B/docs/CODEOWNERS" && grep -q "REPLACE-ME" "$B/docs/CODEOWNERS" && [ ! -e "$B/.gitlab/CODEOWNERS" ]'
 check "existing MCP servers kept, GitLab added" 'jq -e ".mcpServers.Other and .mcpServers.GitLab" "$B/.mcp.json" >/dev/null'
 check "existing CLAUDE.md left alone" '[ "$(cat "$B/CLAUDE.md")" = "# Ours" ]'
@@ -55,7 +55,7 @@ check "gitlab.com host from https remote" 'grep -q "https://gitlab.com/api/v4/mc
 git -C "$B" add -A && git -C "$B" commit -q -m init
 (cd "$B" && bash "$SETUP" init --owners @acme/platform >/dev/null)
 check "re-run with --owners replaces only the managed block" 'grep -q "@acme/platform" "$B/docs/CODEOWNERS" && ! grep -q "REPLACE-ME" "$B/docs/CODEOWNERS" && grep -q "@acme/everyone" "$B/docs/CODEOWNERS"'
-check "managed block appears once" '[ "$(grep -c "BEGIN gitlab-agentic-engineering" "$B/AGENTS.md")" = 1 ]'
+check "managed block appears once" '[ "$(grep -c "BEGIN agentic-eng-config" "$B/AGENTS.md")" = 1 ]'
 
 echo "Host change with --force"
 printf '\n[mcp_servers.Other]\nurl = "https://example.com/mcp"\n' >> "$B/.codex/config.toml"
@@ -74,13 +74,13 @@ check "locally modified skill kept" 'grep -q "local edit" "$B/.claude/skills/git
 echo "install.sh piped to bash"
 S="$WORK/kit-src"; cp -R "$KIT" "$S"; rm -rf "$S/.git"; new_repo "$S" "https://gitlab.example.com/kit.git"
 git -C "$S" add -A && git -C "$S" commit -q -m kit
-export GITLAB_AGENTIC_KIT_REPO="file://$S" GITLAB_AGENTIC_KIT_DIR="$WORK/kit-installed"
+export AGENTIC_ENG_CONFIG_REPO="file://$S" AGENTIC_ENG_CONFIG_DIR="$WORK/kit-installed"
 bash < "$KIT/install.sh" 2>/dev/null
-check "installs the kit" '[ -x "$GITLAB_AGENTIC_KIT_DIR/setup/setup.sh" ]'
+check "installs the kit" '[ -x "$AGENTIC_ENG_CONFIG_DIR/setup/setup.sh" ]'
 echo "# update" >> "$S/README.md" && git -C "$S" commit -q -am update
 C="$WORK/piped"; mkdir "$C"; new_repo "$C" "git@gitlab.example.com:acme/piped.git"
 (cd "$C" && bash -s -- init --owners @acme/maintainers < "$KIT/install.sh" >/dev/null 2>&1)
-check "updates the kit on the next run" 'grep -q "^# update" "$GITLAB_AGENTIC_KIT_DIR/README.md"'
+check "updates the kit on the next run" 'grep -q "^# update" "$AGENTIC_ENG_CONFIG_DIR/README.md"'
 check "runs the setup command" 'grep -q "/.gitlab/duo/ *@acme/maintainers" "$C/.gitlab/CODEOWNERS"'
 
 echo

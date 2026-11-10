@@ -1,4 +1,4 @@
-# GitLab configuration for agentic engineering
+# Agentic Engineering Configuration
 
 Push from your coding agent and walk away. GitLab reviews the merge request,
 repairs the broken pipeline, triages the SAST finding and opens the fix. Come
@@ -65,7 +65,7 @@ Then review and commit the files (section 2), and open your agent to approve
 the GitLab sign-in (section 3). Group and project settings are a separate,
 admin step (section 1).
 
-`install.sh` puts the kit in `~/.gitlab-agentic-kit`, updates it on every run,
+`install.sh` puts the kit in `~/.agentic-eng-config`, updates it on every run,
 and passes its arguments to `setup.sh`. Read it first if you prefer: it is 40
 lines. Without arguments it only installs or updates the kit.
 
@@ -78,7 +78,7 @@ Owner of the top-level group, Maintainer of the projects.
 
 ```
 curl -fsSL https://gitlab.com/gitlab-da/projects/agentic-eng-config/-/raw/main/install.sh | bash
-KIT=~/.gitlab-agentic-kit/setup/setup.sh
+KIT=~/.agentic-eng-config/setup/setup.sh
 
 $KIT check group <top-level-group>
 $KIT apply group <top-level-group> --dry-run    # shows what would change

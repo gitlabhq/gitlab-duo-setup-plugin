@@ -5,7 +5,7 @@ Instructions for coding agents working in this repository.
 ## This project
 
 A small Flask inventory API used to demonstrate the recommended GitLab
-configuration for agentic engineering. Code lives in `app/`, tests in `tests/`.
+Agentic Engineering Configuration. Code lives in `app/`, tests in `tests/`.
 
 - Run tests: `pytest -q`
 - Run the app: `flask --app app run`
