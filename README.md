@@ -36,6 +36,8 @@ MR a flow opens.
 | Piece | Where |
 |---|---|
 | GitLab MCP server | `https://<host>/api/v4/mcp`; see `docs/clients.md` |
+| Client MCP config | `.mcp.json` (Claude Code), `.codex/config.toml` (Codex), `.cursor/mcp.json` (Cursor) |
+| Code owners | `.gitlab/CODEOWNERS`: Maintainer review for CI, Duo, agent and MCP config |
 | `gitlab-checks` skill | `.agents/skills/gitlab-checks/` (copy in `.claude/skills/`) |
 | `gitlab-recommended-config` skill | `.agents/skills/gitlab-recommended-config/` |
 | Instructions | `AGENTS.md` (Codex, Cursor, GitLab Duo flows), `CLAUDE.md` (imports it) |
@@ -59,7 +61,14 @@ The script prints the two things it does not automate yet (selecting the flows
 for the group and creating the fix-pipeline trigger) with the exact settings
 path. See "Status" below.
 
-**Developer.** Connect your client (`docs/clients.md`), clone, and ask:
+Before relying on `.gitlab/CODEOWNERS`, replace `@your-group/maintainers`
+with a real group and turn on "Require approval from code owners" for `main`.
+The MCP config files decide where agents send their GitLab OAuth token, so an
+unreviewed change to them is a credential risk.
+
+**Developer.** Clone and open Claude Code, Codex or Cursor. The GitLab MCP
+server is already configured for the repository; approve OAuth on first use
+(`docs/clients.md`, including Self-Managed). Then ask:
 
 > Is this project on the recommended configuration?
 
@@ -86,6 +95,7 @@ The full shot list for the video is in `demo/demo-script.md`.
 | Selecting the seven flows for the group | Manual for now; `aiCatalogItemConsumerCreate` is the documented mechanism, item ids to look up |
 | Fix-pipeline trigger creation | Manual for now; `aiFlowTriggerCreate` is the documented mechanism, event-type code to confirm |
 | `gitlab-checks` on Claude Code / Codex / Cursor | Not yet run; see `docs/validation-checklist.md` |
+| Committed MCP config picked up per client | Not yet run; checklist C0, E9 |
 | Open MCP questions (FP score field, Security Review output, automatic-session visibility) | Listed in the checklist, section E |
 
 Nothing in this repository has been validated on a live GitLab instance yet.
@@ -97,6 +107,7 @@ Treat `docs/validation-checklist.md` as the first task.
 pip install -r requirements.txt
 make test
 make sync-skills   # after editing anything under .agents/skills/
+make check-skills  # what the skills-in-sync CI job runs
 ```
 
 The SQL injection in `app/routes.py` is intentional. Do not fix it on `main`.

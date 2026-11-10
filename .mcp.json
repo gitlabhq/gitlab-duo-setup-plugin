@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "GitLab": {
+      "type": "http",
+      "url": "${GITLAB_MCP_URL:-https://gitlab.com/api/v4/mcp}",
+      "headers": {
+        "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
+      }
+    }
+  }
+}

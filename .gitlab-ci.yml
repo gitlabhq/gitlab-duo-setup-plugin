@@ -14,6 +14,14 @@ stages:
 include:
   - template: Jobs/SAST.gitlab-ci.yml
 
+# Claude Code reads .claude/skills/, Codex and Cursor read .agents/skills/.
+# Fail fast if the copies drift.
+skills-in-sync:
+  stage: test
+  image: alpine:3.20
+  script:
+    - diff -r .agents/skills .claude/skills || { echo "Skills out of sync; run make sync-skills"; exit 1; }
+
 test:
   stage: test
   image: python:3.12

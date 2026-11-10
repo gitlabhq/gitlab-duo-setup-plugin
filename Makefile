@@ -1,4 +1,4 @@
-.PHONY: test sync-skills check
+.PHONY: test sync-skills check-skills check
 
 test:
 	pytest -q
@@ -10,6 +10,9 @@ sync-skills:
 	rm -rf .claude/skills/gitlab-checks .claude/skills/gitlab-recommended-config
 	cp -R .agents/skills/gitlab-checks .claude/skills/
 	cp -R .agents/skills/gitlab-recommended-config .claude/skills/
+
+check-skills:
+	diff -r .agents/skills .claude/skills
 
 check:
 	bash setup/setup.sh check project "$(PROJECT)"

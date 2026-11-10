@@ -1,6 +1,6 @@
 ---
 name: gitlab-recommended-config
-description: Check whether a GitLab project and its top-level group are on the recommended GitLab configuration for agentic engineering, and report exactly what is on, off, or missing with the settings page to fix each item. Use this whenever the user asks if GitLab Duo is set up, why a review or pipeline fix did not run, whether flows are enabled, how to turn on automatic code review or SAST remediation, or anything about "the recommended configuration", "DAP setup", "Duo settings", or "is this project ready". Also use it when gitlab-checks finds that a flow it expected is not running. Read-only: it reports, and points at setup/setup.sh for changes.
+description: Check whether a GitLab project and its top-level group are on the recommended GitLab configuration for agentic engineering, and report exactly what is on, off, or missing with the settings page to fix each item. Use this whenever the user asks if GitLab Duo is set up, why a review or pipeline fix did not run, whether flows are enabled, how to turn on automatic code review or SAST remediation, or anything about "the recommended configuration", "DAP setup", "Duo settings", or "is this project ready". Also use it when gitlab-checks finds that a flow it expected is not running. Read-only: it reports, and gives the exact command or settings page for each change.
 compatibility: Requires glab authenticated to the instance (glab auth status) and jq. Reading group settings requires the Owner role on the top-level group.
 ---
 
@@ -12,8 +12,8 @@ Duo settings, the project's Merge requests settings, AI > Triggers, and Secure.
 When a flow "didn't run", the cause is nearly always one of them being off. This
 skill reads them all and produces one readiness report.
 
-This skill is read-only. It never changes a setting. For changes it points to
-`setup/setup.sh` in this repository, or to the exact settings page.
+This skill is read-only. It never changes a setting. For each change it gives
+the user the command to run or the exact settings page.
 
 ## Step 1: Identify the project and group
 
@@ -95,9 +95,24 @@ this project. Tell the user which of the seven are present.
 | Flows selected for the group | <n>/7 — missing: ... | Settings > GitLab Duo (top-level group) |
 | agent-config.yml / review instructions | present / missing | commit from this repo |
 
-Next: `bash setup/setup.sh project <path> --apply` turns on the project-level
-settings above. Group-level flow selection is a one-time Owner task.
+Next: <the commands below that apply to the rows that are off>
 ```
+
+For the project-level rows (Maintainer role), give the user one command. If the
+repository contains `setup/setup.sh`, that is
+`bash setup/setup.sh apply project <path>`. Otherwise:
+
+```
+glab api -X PUT "projects/<encoded path>" \
+  -F duo_remote_flows_enabled=true \
+  -F duo_foundational_flows_enabled=true \
+  -F auto_duo_code_review_enabled=true
+```
+
+On Ultimate, add `-F duo_sast_fp_detection_enabled=true -F duo_sast_vr_workflow_enabled=true`.
+Do not run these yourself. Selecting flows for the group is a one-time task for
+an Owner of the top-level group: Settings > GitLab Duo > Change configuration >
+Flow execution.
 
 Keep every status to one of: `on`, `off`, `present`, `missing`, `covered by
 profile`, `unknown`, `unchecked`. Do not infer a status from a related setting;

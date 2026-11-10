@@ -15,6 +15,7 @@ Record pass / partial / fail and open an issue for every gap.
 | A5 | Push rules allow `duo-*` service accounts to push | |
 | A6 | Fix CI/CD Pipeline trigger on Pipeline events → Failed created | |
 | A7 | Triage and Remediation profile attached via `setup.sh attach` | |
+| A7a | `setup.sh apply project` on Premium applies the core fields and reports the SAST fields as skipped | |
 | A8 | Step count, by hand vs with the script, recorded | |
 
 ## B. Scenario 1 — push, then close the IDE
@@ -33,6 +34,7 @@ Record pass / partial / fail and open an issue for every gap.
 
 | # | Check | Claude Code | Codex | Cursor |
 |---|---|---|---|---|
+| C0 | Project MCP config (`.mcp.json` / `.codex/config.toml` / `.cursor/mcp.json`) connects with only an OAuth approval | | | |
 | C1 | Skill is discovered from the repo (`.agents/skills` or `.claude/skills`) | | | |
 | C2 | "What's the status of my MR?" produces the report format | | | |
 | C3 | Report lists running sessions and starts nothing | | | |
@@ -66,6 +68,8 @@ Record pass / partial / fail and open an issue for every gap.
 | E6 | Does the `filter` argument of `aiFlowTriggerCreate` accept a ref condition? | |
 | E7 | What integer does `aiFlowTriggerCreate.eventTypes` use for `PIPELINE_HOOKS`? | |
 | E8 | Does Claude Code expand `@AGENTS.md` in `CLAUDE.md` on the current version? | |
+| E9 | Does the current Codex read project `.codex/config.toml`, send `http_headers`, and still need `rmcp_client`? | |
+| E10 | Does `mr-review-automated-rules.yaml` accept glob patterns in `authors`? | |
 
 ## Exit criteria
 

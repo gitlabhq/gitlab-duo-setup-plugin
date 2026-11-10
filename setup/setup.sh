@@ -106,7 +106,7 @@ check_project() {
   local default_branch; default_branch="$(printf '%s' "$json" | jq -r .default_branch)"
   echo
   echo "Repository files on $default_branch:"
-  for f in .gitlab/duo/agent-config.yml .gitlab/duo/mr-review-instructions.yaml AGENTS.md; do
+  for f in .gitlab/duo/agent-config.yml .gitlab/duo/mr-review-instructions.yaml .gitlab/CODEOWNERS AGENTS.md; do
     if glab api "projects/$id/repository/files/$(enc "$f")?ref=$default_branch" >/dev/null 2>&1; then
       printf '  %-40s present\n' "$f"
     else
@@ -130,10 +130,23 @@ apply_project() {
   glab api -X PUT "projects/$(enc "$project")" \
     -F duo_remote_flows_enabled=true \
     -F duo_foundational_flows_enabled=true \
-    -F auto_duo_code_review_enabled=true \
-    -F duo_sast_fp_detection_enabled=true \
-    -F duo_sast_vr_workflow_enabled=true >/dev/null
-  echo "  done (duo_code_review_decisions_enabled left unchanged; it is beta)"
+    -F auto_duo_code_review_enabled=true >/dev/null
+  echo "  done: flow execution, foundational flows, automatic code review"
+  echo "  (duo_code_review_decisions_enabled left unchanged; it is beta)"
+
+  # The SAST fields are Ultimate-only. Apply them in a separate call so a lower
+  # tier keeps the settings above, and confirm they stuck rather than trusting
+  # a 200 that may have ignored them.
+  local out
+  if out="$(glab api -X PUT "projects/$(enc "$project")" \
+      -F duo_sast_fp_detection_enabled=true \
+      -F duo_sast_vr_workflow_enabled=true 2>/dev/null)" &&
+     printf '%s' "$out" | jq -e '.duo_sast_fp_detection_enabled == true and .duo_sast_vr_workflow_enabled == true' >/dev/null; then
+    echo "  done: SAST false positive detection, SAST vulnerability resolution"
+  else
+    echo "  skipped: SAST false positive detection and vulnerability resolution"
+    echo "           were not applied (they need Ultimate)"
+  fi
   cat <<'EOF'
 
 VERIFY before automating — the fix-pipeline trigger.
