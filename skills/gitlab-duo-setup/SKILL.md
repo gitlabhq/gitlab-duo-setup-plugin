@@ -174,8 +174,8 @@ server.
 ### 2d. Verify
 
 When the user says they've signed in (and after the restart), call a GitLab MCP
-tool: `get_mcp_server_version`, or `list_duo_agents_and_flows` with the
-project path. If the call fails or the tools aren't listed, check the
+tool: `list_duo_agents_and_flows` with the project ID. A successful call
+confirms sign-in, and the flows it lists confirm Step 1 took effect. If the call fails or the tools aren't listed, check the
 troubleshooting table in `references/harnesses.md`.
 
 ## Step 3: Summary

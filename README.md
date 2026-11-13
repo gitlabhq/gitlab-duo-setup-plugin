@@ -29,7 +29,7 @@ Copy `skills/gitlab-duo-setup/` into your harness's skills directory:
 | Cursor | `~/.cursor/skills/` | `.agents/skills/` |
 
 ```bash
-git clone https://gitlab.com/<namespace>/agentic-eng-config.git
+git clone https://gitlab.com/gitlab-da/projects/agentic-eng-config.git
 cp -R agentic-eng-config/skills/gitlab-duo-setup ~/.claude/skills/
 ```
 
