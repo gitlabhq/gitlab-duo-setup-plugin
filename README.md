@@ -1,6 +1,6 @@
 # GitLab Duo setup skill
 
-An Agent Skill for Claude Code, Codex and Cursor users. Load it, ask your agent
+An Agent Skill for Claude Code, Codex, Cursor and Devin users. Load it, ask your agent
 to "set up GitLab Duo", and it does two things:
 
 1. **Turns on GitLab Duo Agent Platform** for the current project and its
@@ -27,11 +27,24 @@ Copy `skills/gitlab-duo-setup/` into your harness's skills directory:
 | Claude Code | `~/.claude/skills/` | `.claude/skills/` |
 | Codex | `~/.agents/skills/` | `.agents/skills/` |
 | Cursor | `~/.cursor/skills/` | `.agents/skills/` |
+| Devin | `~/.config/devin/skills/` | `.devin/skills/` |
 
 ```bash
 git clone https://gitlab.com/gitlab-da/projects/agentic-eng-config.git
 cp -R agentic-eng-config/skills/gitlab-duo-setup ~/.claude/skills/
 ```
+
+Then reload your harness so it sees the new skill:
+
+| Harness | Reload |
+|---|---|
+| Claude Code | Picks it up in the running session. If it isn't listed, restart Claude Code. |
+| Codex | Restart Codex. A running session doesn't see newly installed skills. |
+| Cursor | Picks it up in the running session. If it isn't listed, restart Cursor. |
+| Devin | Restart Devin CLI. Check with `devin skills list`. |
+
+Devin also reads `~/.agents/skills/`, the Codex directory. If you use both,
+install the skill in one place only, so Devin doesn't list it twice.
 
 Then, in your project, ask: "Set up GitLab Duo for this project."
 
@@ -45,6 +58,11 @@ The REST API doesn't cover these, so the skill gives you the UI steps:
 - Self-Managed: connecting the instance to an AI gateway, and a runner tagged
   `gitlab--duo` for flows.
 - The OAuth sign-in itself, which happens in your browser.
+
+Not yet tested end to end: turning on Duo Agent Platform and MCP at the group
+level through the API. The skill follows the GitLab API reference for this and
+re-reads the group afterwards to confirm. If the change doesn't take, it falls
+back to the UI path.
 
 ## Layout
 

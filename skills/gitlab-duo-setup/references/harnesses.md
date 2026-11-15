@@ -83,13 +83,40 @@ Merge with the same `jq` command as Claude Code, without the `type` field:
 **Sign in**: Settings → Cursor Settings → Tools & MCP → GitLab → Connect, and
 approve in the browser.
 
+## Devin
+
+**User-level**: `~/.config/devin/mcp_config.json`. **Project-level**:
+`.devin/mcp_config.json` (committed) or `.devin/mcp_config.local.json` (not
+committed).
+
+Check first with `devin mcp get GitLab` and read its `Source` line. Devin also
+shows servers it imported from other harnesses' configs (for example
+`~/.claude/settings.json`). An imported entry isn't in Devin's own config, so
+treat it as "no Devin entry yet". Don't edit or remove the other harness's
+config.
+
+`devin mcp add` defaults to `local` scope, so always pass `-s`:
+
+```bash
+devin mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp \
+  -H "X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agent_platform,code_security"
+```
+
+Use `-s project` for `.devin/mcp_config.json`.
+
+**Sign in**: `devin mcp add` usually opens the browser sign-in itself. If
+`devin mcp get GitLab` still shows it needs authentication, run
+`devin mcp login GitLab` and approve in the browser. Then restart Devin CLI so
+the server's tools load.
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
 | No GitLab tools after sign-in | The harness hasn't reloaded. Restart it. |
 | Two `GitLab` servers, duplicate tools | Configured at user and project level, or alongside a marketplace plugin. Remove one. |
-| No `duo_agent_platform` tools | `duo_agent_platform_enabled` or `duo_workflow_mcp_enabled` is off on the top-level group (Step 1). |
+| No `duo_agent_platform` tools | `ai_settings.duo_agent_platform_enabled` or `ai_settings.duo_workflow_mcp_enabled` is off on the top-level group (Step 1). |
+| Devin shows a `GitLab` server you didn't add | Devin imports servers from other harnesses' configs. Check the `Source` line in `devin mcp get GitLab`. |
 | No `code_security` tools | Header not sent, or the group isn't on Ultimate. |
 | `insufficient_scope` | A legacy personal access token. Use OAuth. |
 | "Unverified application" or registration fails (Self-Managed) | Dynamic client registration, rate-limited per IP. An admin creates an OAuth app: Admin > Applications, scope `mcp`, Confidential cleared. |
