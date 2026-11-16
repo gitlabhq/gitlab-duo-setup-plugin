@@ -50,7 +50,17 @@ both also read `~/.claude/skills/` (Claude Code) and `~/.agents/skills/`
 (Codex). If you use more than one, install the
 skill in one shared place, so it isn't listed twice.
 
-Then, in your project, ask: "Set up GitLab Duo for this project."
+## Run the skill
+
+Once you have the skill installed in your harness, invoke using the syntax that your harness requires. For example, for Claude and Cursor use the `/gitlab-duo-setup` slash command.
+
+| Harness | Syntax| 
+| --- | --- | 
+| Claude Code | `/gitlab-duo-setup` | 
+| Codex | `$gitlab-duo-setup` | 
+| Cursor | `/gitlab-duo-setup` | 
+| Devin | `@skills:gitlab-duo-setup` | 
+| OpenCode | `@gitlab-duo-setup` |
 
 ## What is not automated yet
 
