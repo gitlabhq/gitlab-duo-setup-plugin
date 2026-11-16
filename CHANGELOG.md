@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.0 (2026-11-16)
+
+- Enable the Developer, Code Review and Fix CI/CD Pipeline foundational flows
+  through GraphQL (`aiCatalogItemConsumerCreate`), in the group and then the
+  project. Before, this was a manual step.
+- Create the Fix CI/CD Pipeline automation for failed pipelines through
+  GraphQL (`aiFlowTriggerCreate`), after checking for an existing one. Before,
+  this was a manual step. Both mutations are marked Experiment by GitLab. The
+  automation mutation was tested on GitLab.com; enabling flows wasn't, because
+  the test group already had them on. The skill falls back to a link if
+  either fails.
+- Check runners with `duoWorkflowRunnerAvailable` instead of
+  `shared_runners_enabled`, and report the project's Duo enablement checks.
+- Print direct links instead of menu paths, built from the host, group and
+  project. Routes checked against GitLab's source (19.6).
+- Read and write the group's `duo_remote_flows_enabled` (flow execution).
+- Drop `jq` as a requirement. The agent reads API responses and merges config
+  files itself.
+- Add `references/graphql.md` with the queries and mutations.
+
 ## 0.3.0 (2026-11-16)
 
 - Drop the `X-Gitlab-Enabled-Mcp-Server-Toolsets` header. With it set, the
