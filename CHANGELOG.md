@@ -18,7 +18,11 @@
 - Read and write the group's `duo_remote_flows_enabled` (flow execution).
 - Drop `jq` as a requirement. The agent reads API responses and merges config
   files itself.
-- Add `references/graphql.md` with the queries and mutations.
+- Add `references/graphql.md` with the queries and mutations, including a
+  project-only read for projects in a personal namespace, which have no group.
+- Stop before the flow and automation steps when the project's enablement
+  checks show Duo Agent Platform isn't available (`feature_available` or
+  `developer_access` is `false`), and quote the check.
 
 ## 0.3.0 (2026-11-16)
 

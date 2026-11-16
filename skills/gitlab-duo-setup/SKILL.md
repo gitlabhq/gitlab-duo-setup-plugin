@@ -137,7 +137,12 @@ Don't call it "not available" or "off". Report "can't read via API" and give
 the Group Duo configuration link.
 
 Then run the GraphQL read in `references/graphql.md` ("Read flows, runners
-and automations"). It returns:
+and automations"). For a project in a personal namespace, use the
+project-only read there ("Personal-namespace projects") and skip the flow and
+automation mutations. If the enablement checks show `feature_available` or
+`developer_access` as `false`, flows aren't available in this project: say so,
+quote the check, and don't propose the flow or automation steps. The read
+returns:
 
 - **Runners**: `duoWorkflowRunnerAvailable`. Flows run as CI jobs on every
   offering, GitLab.com included. If it's `false`, flows can't start: add the

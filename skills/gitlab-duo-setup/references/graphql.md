@@ -50,7 +50,10 @@ How to read it:
 - `duoWorkflowRunnerAvailable: false` means flows can't start. Give the
   runner step.
 - `duoWorkflowStatusCheck.checks` lists any blocker, such as identity
-  verification, each with a message. Report the ones with `value: false`.
+  verification, each with a message. Report the ones with `value: false`. If
+  `feature_available` or `developer_access` is `false`, Duo Agent Platform
+  isn't available to this user in this project. Don't propose the flow or
+  automation mutations; quote the check's message instead.
 - `enabledFoundationalFlows` lists the project's enabled flow references, for
   example `code_review/v1`.
 - `groupFlows` has one entry per flow the group enabled. `foundationalFlowReference`
@@ -66,6 +69,46 @@ How to read it:
   turned on, so check for one before creating it.
 - `webPath` on any entry is that flow's configuration page. Print it as
   `https://<HOST><webPath>`.
+
+## Personal-namespace projects
+
+If `namespace.kind` is `user`, there is no group ID, so the read above fails.
+Use this project-only read instead:
+
+```bash
+glab api graphql -F project="$PROJECT" -F projectId="gid://gitlab/Project/<project id>" -f query='
+query($project: ID!, $projectId: ProjectID!) {
+  project(fullPath: $project) {
+    duoWorkflowRunnerAvailable
+    duoWorkflowStatusCheck {
+      enabled
+      remoteFlowsEnabled
+      foundationalFlowsEnabled
+      enabledFoundationalFlows
+      checks { name value message }
+    }
+    aiFlowTriggers(first: 50) {
+      nodes {
+        id description active eventTypes filter
+        aiCatalogItemConsumer { id item { name foundationalFlowReference } }
+      }
+    }
+  }
+  projectFlows: aiCatalogConfiguredItems(projectId: $projectId, first: 100) {
+    nodes { id enabled webPath item { id name foundationalFlowReference } parentItemConsumer { id } }
+  }
+}'
+```
+
+For a personal project, don't run any of the mutations below. Enabling a flow
+in a project needs the group entry it links to, and the automation needs that
+group entry's service account. Report what the read returned.
+
+On GitLab.com on 2026-11-16, a Free personal project returned
+`feature_available: false` and `developer_access: false`, no enabled flows,
+and `duoWorkflowRunnerAvailable: null`. Duo Agent Platform isn't available
+there. Tell the user that flows need a project in a group on Premium or
+Ultimate, or a group with GitLab Credits.
 
 ## Find a flow's catalog item
 
