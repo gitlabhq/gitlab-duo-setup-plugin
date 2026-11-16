@@ -1,6 +1,6 @@
 # GitLab Duo setup skill
 
-An Agent Skill for Claude Code, Codex, Cursor and Devin users. Load it, ask your agent
+An Agent Skill for Claude Code, Codex, Cursor, Devin and OpenCode users. Load it, ask your agent
 to "set up GitLab Duo", and it does two things:
 
 1. **Turns on GitLab Duo Agent Platform** for the current project and its
@@ -28,6 +28,7 @@ Copy `skills/gitlab-duo-setup/` into your harness's skills directory:
 | Codex | `~/.agents/skills/` | `.agents/skills/` |
 | Cursor | `~/.cursor/skills/` | `.agents/skills/` |
 | Devin | `~/.config/devin/skills/` | `.devin/skills/` |
+| OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` |
 
 ```bash
 git clone https://gitlab.com/gitlab-da/projects/agentic-eng-config.git
@@ -42,9 +43,12 @@ Then reload your harness so it sees the new skill:
 | Codex | Restart Codex. A running session doesn't see newly installed skills. |
 | Cursor | Picks it up in the running session. If it isn't listed, restart Cursor. |
 | Devin | Restart Devin CLI. Check with `devin skills list`. |
+| OpenCode | Check with `opencode debug skill`. If it isn't listed, restart OpenCode. |
 
-Devin also reads `~/.agents/skills/`, the Codex directory. If you use both,
-install the skill in one place only, so Devin doesn't list it twice.
+Some harnesses read other harnesses' skill directories. Devin also reads
+`~/.agents/skills/` (Codex). OpenCode also reads `~/.claude/skills/` (Claude
+Code) and `~/.agents/skills/` (Codex). If you use more than one, install the
+skill in one shared place, so it isn't listed twice.
 
 Then, in your project, ask: "Set up GitLab Duo for this project."
 

@@ -17,6 +17,10 @@
   reference lists it as Ultimate only.
 - Add Devin CLI as a supported harness: install path, MCP config, sign-in, and
   how to spot servers Devin imported from other harnesses (#4).
+- Add OpenCode as a supported harness: install path, MCP config in
+  `opencode.json` (checked against OpenCode 1.14.29), sign-in with
+  `opencode mcp auth`, and a note that OpenCode also reads the Claude Code and
+  Codex skill directories.
 - Document how to reload each harness after installing the skill. Codex needs
   a restart (#3).
 

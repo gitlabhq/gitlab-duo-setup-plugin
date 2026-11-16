@@ -1,6 +1,6 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab Duo Agent Platform and the GitLab MCP server for the current project and coding agent (Claude Code, Codex, Cursor, or Devin). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, or the GitLab MCP server, or asks to connect their agent to GitLab. It turns on the project's and group's Duo settings with glab and the REST API, adds the GitLab MCP server to the local harness config, and walks the user through OAuth sign-in.
+description: Set up GitLab Duo Agent Platform and the GitLab MCP server for the current project and coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, or the GitLab MCP server, or asks to connect their agent to GitLab. It turns on the project's and group's Duo settings with glab and the REST API, adds the GitLab MCP server to the local harness config, and walks the user through OAuth sign-in.
 compatibility: Requires git, glab (authenticated) and jq. Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
   version: "0.2.0"
@@ -184,8 +184,8 @@ X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agen
 
 ### 2a. Identify the harness
 
-Use the one you are running in. If unsure, ask: Claude Code, Codex, Cursor, or
-Devin.
+Use the one you are running in. If unsure, ask: Claude Code, Codex, Cursor,
+Devin, or OpenCode.
 Then ask where to put the config:
 
 - **User-level** (default): works in every repo, nothing to commit.
@@ -217,6 +217,9 @@ what to do for their harness (also in `references/harnesses.md`):
   `devin mcp get GitLab` still shows it needs authentication, ask the user to
   run `devin mcp login GitLab` and approve in the browser. Then ask them to
   restart Devin CLI and tell you when they're back.
+- **OpenCode**: ask the user to run `opencode mcp auth GitLab` (or `/mcps` in
+  OpenCode, select **GitLab**, and sign in) and approve in the browser. If the
+  GitLab tools don't appear afterwards, ask them to restart OpenCode.
 
 On Self-Managed, if the browser shows an "unverified application" warning or
 registration fails, the client used dynamic client registration. Suggest an

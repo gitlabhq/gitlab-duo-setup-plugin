@@ -109,6 +109,48 @@ Use `-s project` for `.devin/mcp_config.json`.
 `devin mcp login GitLab` and approve in the browser. Then restart Devin CLI so
 the server's tools load.
 
+## OpenCode
+
+**User-level**: `~/.config/opencode/opencode.json`. **Project-level**:
+`opencode.json` at the repo root. Servers go directly under `mcp`, keyed by
+name. Check for an existing `GitLab` key first (`opencode mcp list` shows
+every configured server). Merge with `jq`, keeping other servers and settings:
+
+```bash
+f=~/.config/opencode/opencode.json; mkdir -p "$(dirname "$f")"; [ -f "$f" ] || echo '{"$schema": "https://opencode.ai/config.json"}' > "$f"
+jq --arg u "https://<HOST>/api/v4/mcp" \
+   --arg t "core,merge_requests,repository,ci,duo_agent_platform,code_security" \
+   '.mcp.GitLab = {type: "remote", url: $u, headers: {"X-Gitlab-Enabled-Mcp-Server-Toolsets": $t}, enabled: true}' \
+   "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+```
+
+If the user has `opencode.jsonc` with comments instead, `jq` can't parse it.
+Show the user the entry and edit the file by hand, keeping their comments.
+
+Resulting shape:
+
+```json
+{
+  "mcp": {
+    "GitLab": {
+      "type": "remote",
+      "url": "https://<HOST>/api/v4/mcp",
+      "headers": {
+        "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+Then run `opencode debug config`. It prints an error if the config is invalid.
+Don't use `opencode mcp add`: it's interactive.
+
+**Sign in**: `opencode mcp auth GitLab` (or `/mcps` in OpenCode → GitLab →
+sign in), approve in the browser, then check `opencode mcp list` shows GitLab
+connected. Restart OpenCode if the tools don't appear.
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
@@ -117,6 +159,7 @@ the server's tools load.
 | Two `GitLab` servers, duplicate tools | Configured at user and project level, or alongside a marketplace plugin. Remove one. |
 | No `duo_agent_platform` tools | `ai_settings.duo_agent_platform_enabled` or `ai_settings.duo_workflow_mcp_enabled` is off on the top-level group (Step 1). |
 | Devin shows a `GitLab` server you didn't add | Devin imports servers from other harnesses' configs. Check the `Source` line in `devin mcp get GitLab`. |
+| OpenCode config error mentioning `mcp.servers` | A newer OpenCode version that nests servers under `mcp.servers`. Move the `GitLab` entry there, or check `opencode debug config` for the expected shape. |
 | No `code_security` tools | Header not sent, or the group isn't on Ultimate. |
 | `insufficient_scope` | A legacy personal access token. Use OAuth. |
 | "Unverified application" or registration fails (Self-Managed) | Dynamic client registration, rate-limited per IP. An admin creates an OAuth app: Admin > Applications, scope `mcp`, Confidential cleared. |
