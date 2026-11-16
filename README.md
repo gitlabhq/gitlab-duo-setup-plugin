@@ -17,6 +17,10 @@ It works on GitLab.com, Self-Managed and Dedicated.
   signed in: `glab auth login`
 - Maintainer on the project to change project settings; Owner on the top-level
   group to change group settings. With less access, the skill tells you who to ask.
+- GitLab Premium or Ultimate, or Free with GitLab Credits, for Duo Agent
+  Platform.
+- Credits: the skill itself spends none. The flows it turns on do, and when an
+  automation starts a flow, the credits are billed to your top-level namespace.
 
 ## Install
 
@@ -66,17 +70,30 @@ Once you have the skill installed in your harness, invoke using the syntax that 
 
 The REST API doesn't cover these, so the skill gives you the UI steps:
 
+- Checking the group's MCP client access setting (Allow connection to
+  GitLab), which the Groups API doesn't expose.
 - Choosing which foundational flows the group allows (Code Review, Fix CI/CD
   Pipeline, and others).
-- Creating the Fix CI/CD Pipeline trigger on failed pipelines.
-- Self-Managed: connecting the instance to an AI gateway, and a runner tagged
-  `gitlab--duo` for flows.
+- Creating the Fix CI/CD Pipeline automation for failed pipelines (AI >
+  Automations; called Triggers on GitLab 19.5 and earlier).
+- Runners: turning on hosted runners for the project if they're off, or a
+  runner tagged `gitlab--duo`. On Self-Managed, also connecting the instance to
+  an AI gateway.
 - The OAuth sign-in itself, which happens in your browser.
 
-Not yet tested end to end: turning on Duo Agent Platform and MCP at the group
-level through the API. The skill follows the GitLab API reference for this and
-re-reads the group afterwards to confirm. If the change doesn't take, it falls
-back to the UI path.
+The skill lists these with UI paths checked against GitLab 19.6 and a link to
+the docs for each.
+
+What has been observed on GitLab.com: the group's Duo Agent Platform and MCP
+fields read correctly from `ai_settings`, and the skill confirms the setup by
+listing the project's flows through the MCP server. Not yet observed: turning
+those group fields on through the API, because they were already on in the
+test group. The skill re-reads the group afterwards to confirm, and gives the
+UI path if the change doesn't take.
+
+Not yet tested: automatic Code Review (`auto_duo_code_review_enabled`) on a
+Premium project. The skill sends it in a request of its own and reports the
+result.
 
 ## Layout
 
