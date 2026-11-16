@@ -2,6 +2,11 @@
 
 Replace `<HOST>` with the GitLab web host (for example `gitlab.com`).
 
+When a config file needs editing, merge into it: read the file, add or
+replace only the `GitLab` entry, and keep every other server and setting. If
+the file doesn't exist, create it with just the entry shown. Edit the file
+directly; no extra tools are needed.
+
 ```
 URL:     https://<HOST>/api/v4/mcp
 Header:  none (the server's default toolsets)
@@ -40,15 +45,6 @@ instructions created `local` entries. If `claude mcp list` shows a `local`
 }
 ```
 
-With `jq`, keeping other servers:
-
-```bash
-f=.mcp.json; [ -f "$f" ] || echo '{}' > "$f"
-jq --arg u "https://<HOST>/api/v4/mcp" \
-   '.mcpServers.GitLab = {type: "http", url: $u}' \
-   "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-```
-
 **Sign in**: restart Claude Code (project servers prompt for approval on first
 start), then `/mcp` → GitLab → Authenticate → approve in the browser.
 
@@ -71,7 +67,7 @@ Older Codex versions also need `rmcp_client = true` under `[features]`.
 ## Cursor
 
 **User-level**: `~/.cursor/mcp.json`. **Project-level**: `.cursor/mcp.json`.
-Merge with the same `jq` command as Claude Code, without the `type` field:
+Merge this entry in. Unlike Claude Code, it has no `type` field:
 
 ```json
 {
@@ -145,18 +141,24 @@ Check first with `opencode mcp list`. The entry lands under `mcp.servers`:
 
 **OpenCode 1.x** (checked against 1.14.29): `opencode mcp add` is interactive
 and servers go directly under `mcp`, keyed by name, with `"enabled": true`.
-Merge with `jq`, keeping other servers and settings:
+Merge this entry into `~/.config/opencode/opencode.json` (user-level) or the
+project's `opencode.json`. A new file starts with
+`"$schema": "https://opencode.ai/config.json"`:
 
-```bash
-f=~/.config/opencode/opencode.json; mkdir -p "$(dirname "$f")"; [ -f "$f" ] || echo '{"$schema": "https://opencode.ai/config.json"}' > "$f"
-jq --arg u "https://<HOST>/api/v4/mcp" \
-   '.mcp.GitLab = {type: "remote", url: $u, enabled: true}' \
-   "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+```json
+{
+  "mcp": {
+    "GitLab": {
+      "type": "remote",
+      "url": "https://<HOST>/api/v4/mcp",
+      "enabled": true
+    }
+  }
+}
 ```
 
-Then run `opencode debug config`, which prints an error if the config is
-invalid. If the user has `opencode.jsonc` with comments, `jq` can't parse it:
-show the user the entry and edit the file by hand, keeping their comments.
+If the user has `opencode.jsonc`, keep their comments when you edit it. Then
+run `opencode debug config`, which prints an error if the config is invalid.
 
 **Sign in** (both versions): `opencode mcp auth GitLab` (or `/mcps` in
 OpenCode → GitLab → sign in), approve in the browser, then check
@@ -193,7 +195,7 @@ gets a 400 error.
 | No GitLab tools after sign-in | The harness hasn't reloaded. Restart it. |
 | Two `GitLab` servers, duplicate tools | Configured at user and project level, or alongside a marketplace plugin. Remove one. |
 | Claude Code uses an old `GitLab` config | A `local` scope entry overrides the `user` one. Check `claude mcp list`, then `claude mcp remove GitLab -s local`. |
-| 403 at sign-in, or "MCP server not enabled for any of your groups" | MCP client access is off for the top-level group: Settings > General > Permissions and group features > MCP client access > Allow connection to GitLab (group Owner). The result is cached for up to an hour. On Self-Managed and Dedicated, an admin turns it on for the instance. |
+| 403 at sign-in, or "MCP server not enabled for any of your groups" | MCP client access is off for the top-level group. A group Owner opens `https://<HOST>/groups/<GROUP>/-/edit#js-permissions-settings` and checks MCP client access > Allow connection to GitLab. The result is cached for up to an hour. On Self-Managed and Dedicated, an admin turns it on for the instance. |
 | No `work_items` tools (can't read issues) | A toolsets header that leaves out `work_items`. Remove the header, or add the defaults to it (see [Opt-in toolsets](#opt-in-toolsets)). |
 | No `duo_agent_platform` tools | Duo Agent Platform isn't available to this user. These tools show up only when it is, even with the header set to `all`. Check the tier, the user's seat or credits, and `ai_settings.duo_agent_platform_enabled` on the top-level group (Step 1). |
 | Devin shows a `GitLab` server you didn't add | Devin imports servers from other harnesses' configs. Check the `Source` line in `devin mcp get GitLab`. |
