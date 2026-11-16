@@ -23,6 +23,15 @@
   Codex skill directories.
 - Document how to reload each harness after installing the skill. Codex needs
   a restart (#3).
+- List the manual steps (now Step 1c) before asking for approval and applying
+  settings (now Step 1d), so the user sees them before anything changes (#7).
+- Ask the user to say when they've finished OAuth sign-in; some harnesses
+  don't hand the turn back to the agent.
+- OpenCode 2.x: add the server with `opencode mcp add --global`, which writes
+  `mcp.servers.GitLab`. Keep the 1.x `jq` path. Replace the README's
+  `opencode debug skill` check, which 2.x removed (#8).
+- Devin: the skill and MCP tools load without a restart. Note that Devin also
+  reads `~/.claude/skills/`.
 
 ## 0.1.0 (2026-11-13)
 

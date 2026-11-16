@@ -107,11 +107,30 @@ user has the access to change it. If the user lacks access (project below
 Maintainer, group below Owner), list those settings as "ask a Maintainer/Owner
 to turn on" and do not try them. Fields you couldn't read go in the table as
 "can't read via API, check in the UI", not as proposed changes. If everything
-is already on, say so and go to Step 2.
+is already on, say so, list the manual steps from 1c, and go to Step 2.
 
-Ask: "Turn these on?" Wait for a yes.
+### 1c. What the API can't do yet
 
-### 1c. Apply
+Before asking for approval, tell the user these are manual and give the
+paths, so they see the whole picture before anything changes. Don't claim
+they're done.
+
+- **Foundational flows selection** (top-level group Owner): Settings > GitLab
+  Duo > Change configuration > Flow execution. Allow flow execution, allow
+  foundational flows, then check each flow wanted (Code Review, Fix CI/CD
+  Pipeline, ...).
+- **Fix CI/CD Pipeline trigger** (per project): Automate > Triggers (AI >
+  Triggers on some versions) > New trigger, event Pipeline events → Failed,
+  flow Fix CI/CD Pipeline.
+- **Self-Managed and Dedicated only**: the instance needs Duo connected to an AI
+  gateway, and flows need a runner tagged `gitlab--duo` with a Docker-capable
+  executor. Settings > General > GitLab Duo shows a runner check.
+- **Push rules**: if the project has push rules, allow the `duo-*` service
+  accounts, or flows can't push fix branches.
+
+Then ask: "Turn these on?" Wait for a yes.
+
+### 1d. Apply
 
 Group first, then project, because project flows depend on the group allowing
 them.
@@ -155,23 +174,6 @@ Then read the entity again and report each field as on, failed (quote the API
 error), or not applied (on Ultimate fields this usually means the project
 isn't on Ultimate).
 
-### 1d. What the API can't do yet
-
-Tell the user these are manual and give the paths. Don't claim they're done.
-
-- **Foundational flows selection** (top-level group Owner): Settings > GitLab
-  Duo > Change configuration > Flow execution. Allow flow execution, allow
-  foundational flows, then check each flow wanted (Code Review, Fix CI/CD
-  Pipeline, ...).
-- **Fix CI/CD Pipeline trigger** (per project): Automate > Triggers (AI >
-  Triggers on some versions) > New trigger, event Pipeline events → Failed,
-  flow Fix CI/CD Pipeline.
-- **Self-Managed and Dedicated only**: the instance needs Duo connected to an AI
-  gateway, and flows need a runner tagged `gitlab--duo` with a Docker-capable
-  executor. Settings > General > GitLab Duo shows a runner check.
-- **Push rules**: if the project has push rules, allow the `duo-*` service
-  accounts, or flows can't push fix branches.
-
 ## Step 2: Connect the GitLab MCP server
 
 The server is `https://<HOST>/api/v4/mcp`, HTTP transport, OAuth in the
@@ -204,7 +206,9 @@ setting the user has.
 ### 2c. Authenticate
 
 The OAuth sign-in opens a browser, so the user must do it. Tell them exactly
-what to do for their harness (also in `references/harnesses.md`):
+what to do for their harness (also in `references/harnesses.md`), and ask them
+to tell you when they've signed in: some harnesses (Claude Code's `/mcp`, for
+example) don't hand the turn back to you after sign-in.
 
 - **Claude Code**: new servers load at session start. Ask the user to restart
   Claude Code (or `/exit` and run `claude --continue`), then run `/mcp`,
@@ -215,8 +219,9 @@ what to do for their harness (also in `references/harnesses.md`):
   the "Needs login" link), and approve in the browser.
 - **Devin**: `devin mcp add` usually starts the browser sign-in itself. If
   `devin mcp get GitLab` still shows it needs authentication, ask the user to
-  run `devin mcp login GitLab` and approve in the browser. Then ask them to
-  restart Devin CLI and tell you when they're back.
+  run `devin mcp login GitLab` and approve in the browser. The tools usually
+  load without a restart; if they don't appear, ask the user to restart Devin
+  CLI.
 - **OpenCode**: ask the user to run `opencode mcp auth GitLab` (or `/mcps` in
   OpenCode, select **GitLab**, and sign in) and approve in the browser. If the
   GitLab tools don't appear afterwards, ask them to restart OpenCode.

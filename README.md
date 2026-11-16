@@ -42,12 +42,12 @@ Then reload your harness so it sees the new skill:
 | Claude Code | Picks it up in the running session. If it isn't listed, restart Claude Code. |
 | Codex | Restart Codex. A running session doesn't see newly installed skills. |
 | Cursor | Picks it up in the running session. If it isn't listed, restart Cursor. |
-| Devin | Restart Devin CLI. Check with `devin skills list`. |
-| OpenCode | Check with `opencode debug skill`. If it isn't listed, restart OpenCode. |
+| Devin | Picks it up without a restart. Check with `devin skills list`. |
+| OpenCode | Picks it up in the running session. If it isn't listed, restart OpenCode. |
 
-Some harnesses read other harnesses' skill directories. Devin also reads
-`~/.agents/skills/` (Codex). OpenCode also reads `~/.claude/skills/` (Claude
-Code) and `~/.agents/skills/` (Codex). If you use more than one, install the
+Some harnesses read other harnesses' skill directories. Devin and OpenCode
+both also read `~/.claude/skills/` (Claude Code) and `~/.agents/skills/`
+(Codex). If you use more than one, install the
 skill in one shared place, so it isn't listed twice.
 
 Then, in your project, ask: "Set up GitLab Duo for this project."
