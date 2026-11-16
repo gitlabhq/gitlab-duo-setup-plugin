@@ -1,9 +1,9 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab Duo Agent Platform and the GitLab MCP server for the current project and coding agent (Claude Code, Codex, or Cursor). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, or the GitLab MCP server, or asks to connect their agent to GitLab. It turns on the project's and group's Duo settings with glab and the REST API, adds the GitLab MCP server to the local harness config, and walks the user through OAuth sign-in.
+description: Set up GitLab Duo Agent Platform and the GitLab MCP server for the current project and coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, or the GitLab MCP server, or asks to connect their agent to GitLab. It turns on the project's and group's Duo settings with glab and the REST API, adds the GitLab MCP server to the local harness config, and walks the user through OAuth sign-in.
 compatibility: Requires git, glab (authenticated) and jq. Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # gitlab-duo-setup
@@ -50,66 +50,70 @@ From the response, note `id`, `namespace.kind`, `namespace.full_path`,
 `namespace.full_path`. If `namespace.kind` is `user`, there is no group: skip
 the group settings.
 
-Project fields (needs Maintainer):
+Project fields this skill manages (needs Maintainer):
 
 | Field | What it turns on |
 |---|---|
 | `duo_remote_flows_enabled` | Flows can run in this project |
 | `duo_foundational_flows_enabled` | GitLab's built-in flows (Code Review, Fix CI/CD Pipeline, ...) |
-| `auto_duo_code_review_enabled` | Duo reviews every new MR automatically |
+| `auto_duo_code_review_enabled` | Duo reviews every new MR automatically (Ultimate) |
 | `duo_sast_fp_detection_enabled` | SAST false positive detection (Ultimate) |
 | `duo_sast_vr_workflow_enabled` | SAST vulnerability resolution (Ultimate) |
+
+Also show every other project field whose name contains `duo`, read-only, so
+the user sees the full picture:
+
+```bash
+glab api "projects/$ENC" | jq 'with_entries(select(.key | test("duo")))'
+```
+
+Don't propose changes to fields outside the managed table. In particular,
+leave `duo_code_review_decisions_enabled` alone: it lets Duo approve or
+request changes on merge requests, which a team should choose on purpose.
+
+Settings pages in the UI don't always map one-to-one to these API fields. If
+the user says they turned something on in the UI, read the project again and
+go by the API values.
 
 Top-level group fields (needs group Owner):
 
 ```bash
-glab api "groups/<top-level-group>"
+glab api "groups/<top-level-group>" | jq '{
+  duo_features_enabled,
+  has_ai_settings: has("ai_settings"),
+  duo_agent_platform_enabled: .ai_settings.duo_agent_platform_enabled,
+  duo_workflow_mcp_enabled: .ai_settings.duo_workflow_mcp_enabled
+}'
 ```
 
-| Field | What it turns on |
-|---|---|
-| `duo_features_enabled` | GitLab Duo for the group |
-| `duo_agent_platform_enabled` | Duo Agent Platform for the group |
-| `duo_workflow_mcp_enabled` | MCP access for Duo Agent Platform |
+| Field | Where in the response | What it turns on |
+|---|---|---|
+| `duo_features_enabled` | top level | GitLab Duo for the group |
+| `duo_agent_platform_enabled` | inside `ai_settings` | Duo Agent Platform for the group |
+| `duo_workflow_mcp_enabled` | inside `ai_settings` | MCP access for Duo Agent Platform |
 
-For each field: `true` means already on. A field missing from the response
-means the instance or tier doesn't offer it: report "not available" and skip
-it. Don't treat a missing field as an error.
+The last two are nested inside the `ai_settings` object, not at the top level
+of the response. Read them from there.
+
+For each field: `true` means already on, `false` means off. If a field (or the
+whole `ai_settings` object) is missing, you can't read it through the API.
+Don't call it "not available" or "off". Report "can't read via API" and ask
+the user to check it in the UI: top-level group > Settings > GitLab Duo.
 
 ### 1b. Propose
 
 Show one table: entity, field, current value, proposed value, and whether the
 user has the access to change it. If the user lacks access (project below
 Maintainer, group below Owner), list those settings as "ask a Maintainer/Owner
-to turn on" and do not try them. If everything is already on, say so and go to
-Step 2.
+to turn on" and do not try them. Fields you couldn't read go in the table as
+"can't read via API, check in the UI", not as proposed changes. If everything
+is already on, say so, list the manual steps from 1c, and go to Step 2.
 
-Ask: "Turn these on?" Wait for a yes.
+### 1c. What the API can't do yet
 
-### 1c. Apply
-
-Group first, then project, because project flows depend on the group allowing
-them. Send the core fields in one request and the Ultimate fields in a
-separate one, so a Premium project still gets the core settings:
-
-```bash
-glab api -X PUT "groups/<top-level-group>" \
-  -F duo_features_enabled=true -F duo_agent_platform_enabled=true -F duo_workflow_mcp_enabled=true
-
-glab api -X PUT "projects/$ENC" \
-  -F duo_remote_flows_enabled=true -F duo_foundational_flows_enabled=true -F auto_duo_code_review_enabled=true
-
-glab api -X PUT "projects/$ENC" \
-  -F duo_sast_fp_detection_enabled=true -F duo_sast_vr_workflow_enabled=true
-```
-
-Include only the fields from the approved plan. Then read the entity again and
-report each field as on, failed (quote the API error), or not applied (on
-Ultimate fields this usually means the project isn't on Ultimate).
-
-### 1d. What the API can't do yet
-
-Tell the user these are manual and give the paths. Don't claim they're done.
+Before asking for approval, tell the user these are manual and give the
+paths, so they see the whole picture before anything changes. Don't claim
+they're done.
 
 - **Foundational flows selection** (top-level group Owner): Settings > GitLab
   Duo > Change configuration > Flow execution. Allow flow execution, allow
@@ -124,6 +128,52 @@ Tell the user these are manual and give the paths. Don't claim they're done.
 - **Push rules**: if the project has push rules, allow the `duo-*` service
   accounts, or flows can't push fix branches.
 
+Then ask: "Turn these on?" Wait for a yes.
+
+### 1d. Apply
+
+Group first, then project, because project flows depend on the group allowing
+them.
+
+The group's Agent Platform and MCP fields are written through the nested
+`ai_settings_attributes` object, so send JSON:
+
+```bash
+glab api -X PUT "groups/<top-level-group>" -H "Content-Type: application/json" --input - <<'EOF'
+{
+  "duo_features_enabled": true,
+  "ai_settings_attributes": {
+    "duo_agent_platform_enabled": true,
+    "duo_workflow_mcp_enabled": true
+  }
+}
+EOF
+```
+
+This group request follows the GitLab API reference but hasn't been tested
+end to end yet. Always re-read the group afterwards and report what changed.
+If a field is still off or can't be read, give the user the UI path: top-level
+group > Settings > GitLab Duo > Change configuration.
+
+For the project, send the core fields in one request and the Ultimate fields
+in a separate one, so a Premium project still gets the core settings:
+
+```bash
+glab api -X PUT "projects/$ENC" \
+  -F duo_remote_flows_enabled=true -F duo_foundational_flows_enabled=true
+
+glab api -X PUT "projects/$ENC" \
+  -F auto_duo_code_review_enabled=true -F duo_sast_fp_detection_enabled=true -F duo_sast_vr_workflow_enabled=true
+```
+
+Include only the fields from the approved plan. Make the changes yourself with
+these requests. If the user says they already changed a setting in the UI,
+re-read it, and if the API still shows it off, send the request anyway.
+
+Then read the entity again and report each field as on, failed (quote the API
+error), or not applied (on Ultimate fields this usually means the project
+isn't on Ultimate).
+
 ## Step 2: Connect the GitLab MCP server
 
 The server is `https://<HOST>/api/v4/mcp`, HTTP transport, OAuth in the
@@ -136,7 +186,8 @@ X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agen
 
 ### 2a. Identify the harness
 
-Use the one you are running in. If unsure, ask: Claude Code, Codex, or Cursor.
+Use the one you are running in. If unsure, ask: Claude Code, Codex, Cursor,
+Devin, or OpenCode.
 Then ask where to put the config:
 
 - **User-level** (default): works in every repo, nothing to commit.
@@ -155,7 +206,9 @@ setting the user has.
 ### 2c. Authenticate
 
 The OAuth sign-in opens a browser, so the user must do it. Tell them exactly
-what to do for their harness (also in `references/harnesses.md`):
+what to do for their harness (also in `references/harnesses.md`), and ask them
+to tell you when they've signed in: some harnesses (Claude Code's `/mcp`, for
+example) don't hand the turn back to you after sign-in.
 
 - **Claude Code**: new servers load at session start. Ask the user to restart
   Claude Code (or `/exit` and run `claude --continue`), then run `/mcp`,
@@ -164,6 +217,14 @@ what to do for their harness (also in `references/harnesses.md`):
   browser, then restart Codex.
 - **Cursor**: Settings > Cursor Settings > Tools & MCP > GitLab > Connect (or
   the "Needs login" link), and approve in the browser.
+- **Devin**: `devin mcp add` usually starts the browser sign-in itself. If
+  `devin mcp get GitLab` still shows it needs authentication, ask the user to
+  run `devin mcp login GitLab` and approve in the browser. The tools usually
+  load without a restart; if they don't appear, ask the user to restart Devin
+  CLI.
+- **OpenCode**: ask the user to run `opencode mcp auth GitLab` (or `/mcps` in
+  OpenCode, select **GitLab**, and sign in) and approve in the browser. If the
+  GitLab tools don't appear afterwards, ask them to restart OpenCode.
 
 On Self-Managed, if the browser shows an "unverified application" warning or
 registration fails, the client used dynamic client registration. Suggest an
