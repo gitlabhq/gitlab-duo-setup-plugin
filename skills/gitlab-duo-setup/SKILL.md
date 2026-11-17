@@ -429,6 +429,13 @@ On no, go to Step 7. On yes, follow `references/security.md`. In short:
    five open fix merge requests per project. Offer Standard if the user wants
    it to run automatically after every scan.
 
+4. Offer the opt-in `code_security` MCP toolset, so the agent can list
+   findings and read their verdicts over MCP (`list_vulnerabilities`,
+   `get_vulnerability`) instead of falling back to `glab`. It means adding
+   the toolsets header with the defaults plus `code_security` (Step 4,
+   `references/harnesses.md`), then reloading the server. If the user says
+   no, the `glab` reads in `references/security.md` still work.
+
 Mention once, in a single line, that Security Review (beta) is also
 available for reviewing merge requests, and that it needs experiment and beta
 features on for the group. Don't set it up unless the user asks; if they do,
