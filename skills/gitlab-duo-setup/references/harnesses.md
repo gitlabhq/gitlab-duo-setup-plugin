@@ -2,19 +2,35 @@
 
 Replace `<HOST>` with the GitLab web host (for example `gitlab.com`).
 
+When a config file needs editing, merge into it: read the file, add or
+replace only the `GitLab` entry, and keep every other server and setting. If
+the file doesn't exist, create it with just the entry shown. Edit the file
+directly; no extra tools are needed.
+
 ```
 URL:     https://<HOST>/api/v4/mcp
-Header:  X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agent_platform,code_security
+Header:  none (the server's default toolsets)
 ```
+
+The defaults are `core`, `merge_requests`, `work_items`, `repository` and
+`ci`, plus `duo_agent_platform` when the user has Duo Agent Platform. Send no
+toolsets header unless the user asks for an opt-in toolset. See
+[Opt-in toolsets](#opt-in-toolsets).
 
 ## Claude Code
 
-**User-level**: check first with `claude mcp get GitLab`, then:
+**User-level**: check first with `claude mcp list` and `claude mcp get GitLab`,
+then:
 
 ```bash
-claude mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp \
-  --header "X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agent_platform,code_security"
+claude mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp
 ```
+
+Always pass `-s user`. Without it, the server is added at `local` scope, which
+works only in the directory where you ran the command. A `local` entry also
+takes precedence over a `user` entry with the same name, and older setup
+instructions created `local` entries. If `claude mcp list` shows a `local`
+`GitLab` entry, ask before removing it: `claude mcp remove GitLab -s local`.
 
 **Project-level**: merge into `.mcp.json` at the repo root:
 
@@ -23,23 +39,10 @@ claude mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp \
   "mcpServers": {
     "GitLab": {
       "type": "http",
-      "url": "https://<HOST>/api/v4/mcp",
-      "headers": {
-        "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
-      }
+      "url": "https://<HOST>/api/v4/mcp"
     }
   }
 }
-```
-
-With `jq`, keeping other servers:
-
-```bash
-f=.mcp.json; [ -f "$f" ] || echo '{}' > "$f"
-jq --arg u "https://<HOST>/api/v4/mcp" \
-   --arg t "core,merge_requests,repository,ci,duo_agent_platform,code_security" \
-   '.mcpServers.GitLab = {type: "http", url: $u, headers: {"X-Gitlab-Enabled-Mcp-Server-Toolsets": $t}}' \
-   "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 ```
 
 **Sign in**: restart Claude Code (project servers prompt for approval on first
@@ -55,7 +58,6 @@ append if absent:
 ```toml
 [mcp_servers.GitLab]
 url = "https://<HOST>/api/v4/mcp"
-http_headers = { "X-Gitlab-Enabled-Mcp-Server-Toolsets" = "core,merge_requests,repository,ci,duo_agent_platform,code_security" }
 ```
 
 Older Codex versions also need `rmcp_client = true` under `[features]`.
@@ -65,16 +67,13 @@ Older Codex versions also need `rmcp_client = true` under `[features]`.
 ## Cursor
 
 **User-level**: `~/.cursor/mcp.json`. **Project-level**: `.cursor/mcp.json`.
-Merge with the same `jq` command as Claude Code, without the `type` field:
+Merge this entry in. Unlike Claude Code, it has no `type` field:
 
 ```json
 {
   "mcpServers": {
     "GitLab": {
-      "url": "https://<HOST>/api/v4/mcp",
-      "headers": {
-        "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
-      }
+      "url": "https://<HOST>/api/v4/mcp"
     }
   }
 }
@@ -98,8 +97,7 @@ config.
 `devin mcp add` defaults to `local` scope, so always pass `-s`:
 
 ```bash
-devin mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp \
-  -H "X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,repository,ci,duo_agent_platform,code_security"
+devin mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp
 ```
 
 Use `-s project` for `.devin/mcp_config.json`.
@@ -120,8 +118,7 @@ config and keeps other servers.
 - **User-level**: `~/.config/opencode/opencode.json`:
 
   ```bash
-  opencode mcp add GitLab --global --url https://<HOST>/api/v4/mcp \
-    --header "X-Gitlab-Enabled-Mcp-Server-Toolsets=core,merge_requests,repository,ci,duo_agent_platform,code_security"
+  opencode mcp add GitLab --global --url https://<HOST>/api/v4/mcp
   ```
 
 - **Project-level**: the same command without `--global`, which writes the
@@ -135,10 +132,7 @@ Check first with `opencode mcp list`. The entry lands under `mcp.servers`:
     "servers": {
       "GitLab": {
         "type": "remote",
-        "url": "https://<HOST>/api/v4/mcp",
-        "headers": {
-          "X-Gitlab-Enabled-Mcp-Server-Toolsets": "core,merge_requests,repository,ci,duo_agent_platform,code_security"
-        }
+        "url": "https://<HOST>/api/v4/mcp"
       }
     }
   }
@@ -147,24 +141,52 @@ Check first with `opencode mcp list`. The entry lands under `mcp.servers`:
 
 **OpenCode 1.x** (checked against 1.14.29): `opencode mcp add` is interactive
 and servers go directly under `mcp`, keyed by name, with `"enabled": true`.
-Merge with `jq`, keeping other servers and settings:
+Merge this entry into `~/.config/opencode/opencode.json` (user-level) or the
+project's `opencode.json`. A new file starts with
+`"$schema": "https://opencode.ai/config.json"`:
 
-```bash
-f=~/.config/opencode/opencode.json; mkdir -p "$(dirname "$f")"; [ -f "$f" ] || echo '{"$schema": "https://opencode.ai/config.json"}' > "$f"
-jq --arg u "https://<HOST>/api/v4/mcp" \
-   --arg t "core,merge_requests,repository,ci,duo_agent_platform,code_security" \
-   '.mcp.GitLab = {type: "remote", url: $u, headers: {"X-Gitlab-Enabled-Mcp-Server-Toolsets": $t}, enabled: true}' \
-   "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+```json
+{
+  "mcp": {
+    "GitLab": {
+      "type": "remote",
+      "url": "https://<HOST>/api/v4/mcp",
+      "enabled": true
+    }
+  }
+}
 ```
 
-Then run `opencode debug config`, which prints an error if the config is
-invalid. If the user has `opencode.jsonc` with comments, `jq` can't parse it:
-show the user the entry and edit the file by hand, keeping their comments.
+If the user has `opencode.jsonc`, keep their comments when you edit it. Then
+run `opencode debug config`, which prints an error if the config is invalid.
 
 **Sign in** (both versions): `opencode mcp auth GitLab` (or `/mcps` in
 OpenCode → GitLab → sign in), approve in the browser, then check
 `opencode mcp list` shows GitLab connected. Restart OpenCode if the tools
 don't appear.
+
+## Opt-in toolsets
+
+Add a header only if the user asks for an opt-in toolset: `code_security`
+(which has tools only on Ultimate), `wikis` or `orbit`. Once the header is
+set, the server limits itself to the toolsets named in it, so list the
+defaults as well:
+
+```
+X-Gitlab-Enabled-Mcp-Server-Toolsets: core,merge_requests,work_items,repository,ci,duo_agent_platform,code_security
+```
+
+`all` turns on every toolset, the opt-in ones included. An unknown toolset name
+gets a 400 error.
+
+| Harness | How to send the header |
+|---|---|
+| Claude Code | `--header "X-Gitlab-Enabled-Mcp-Server-Toolsets: <list>"` on `claude mcp add`, or `"headers": {...}` in `.mcp.json` |
+| Codex | `http_headers = { "X-Gitlab-Enabled-Mcp-Server-Toolsets" = "<list>" }` in the `[mcp_servers.GitLab]` table (the key comes from Codex's MCP docs; GitLab's docs don't show a Codex example) |
+| Cursor | `"headers": {...}` in `mcp.json` |
+| Devin | `-H "X-Gitlab-Enabled-Mcp-Server-Toolsets: <list>"` on `devin mcp add` |
+| OpenCode 2.x | `--header "X-Gitlab-Enabled-Mcp-Server-Toolsets=<list>"` on `opencode mcp add` |
+| OpenCode 1.x | `"headers": {...}` in the `mcp.GitLab` entry |
 
 ## Troubleshooting
 
@@ -172,10 +194,13 @@ don't appear.
 |---|---|
 | No GitLab tools after sign-in | The harness hasn't reloaded. Restart it. |
 | Two `GitLab` servers, duplicate tools | Configured at user and project level, or alongside a marketplace plugin. Remove one. |
-| No `duo_agent_platform` tools | `ai_settings.duo_agent_platform_enabled` or `ai_settings.duo_workflow_mcp_enabled` is off on the top-level group (Step 1). |
+| Claude Code uses an old `GitLab` config | A `local` scope entry overrides the `user` one. Check `claude mcp list`, then `claude mcp remove GitLab -s local`. |
+| 403 at sign-in, or "MCP server not enabled for any of your groups" | MCP client access is off for the top-level group. A group Owner opens `https://<HOST>/groups/<GROUP>/-/edit#js-permissions-settings` and checks MCP client access > Allow connection to GitLab. The result is cached for up to an hour. On Self-Managed and Dedicated, an admin turns it on for the instance. |
+| No `work_items` tools (can't read issues) | A toolsets header that leaves out `work_items`. Remove the header, or add the defaults to it (see [Opt-in toolsets](#opt-in-toolsets)). |
+| No `duo_agent_platform` tools | Duo Agent Platform isn't available to this user. These tools show up only when it is, even with the header set to `all`. Check the tier, the user's seat or credits, and `ai_settings.duo_agent_platform_enabled` on the top-level group (Step 1). |
 | Devin shows a `GitLab` server you didn't add | Devin imports servers from other harnesses' configs. Check the `Source` line in `devin mcp get GitLab`. |
 | OpenCode doesn't list the `GitLab` server | The entry uses the other version's shape: OpenCode 2 reads `mcp.servers.GitLab`, 1.x reads `mcp.GitLab`. Check `opencode --version` and use the matching section above. |
-| No `code_security` tools | Header not sent, or the group isn't on Ultimate. |
+| No `code_security` tools | It's opt-in: add the header with the defaults plus `code_security`. Its tools also need Ultimate. |
 | `insufficient_scope` | A legacy personal access token. Use OAuth. |
 | "Unverified application" or registration fails (Self-Managed) | Dynamic client registration, rate-limited per IP. An admin creates an OAuth app: Admin > Applications, scope `mcp`, Confidential cleared. |
 | 404 at `/api/v4/mcp` | The instance is too old or the MCP server isn't enabled. Ask an admin. |
