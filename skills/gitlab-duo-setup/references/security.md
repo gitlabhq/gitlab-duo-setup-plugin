@@ -66,10 +66,28 @@ query($project: ID!) {
 ```
 
 The numeric part of `id` is the goal for a manual Resolve SAST Vulnerability
-run (SKILL.md Step 7). Before starting one, check `falsePositive` and
-`mergeRequest` on the vulnerability, so you don't rerun a finding that's
-flagged or already has a fix MR. SAST here includes infrastructure-as-code
-findings (KICS): the flow takes them too.
+run (SKILL.md Step 7). Before starting one, check `mergeRequest` on the
+vulnerability, so you don't rerun a finding that already has a fix MR.
+Don't skip a finding because `falsePositive` is `true`: it's `true` whenever
+the finding has any false positive flag, including one that concluded the
+finding is real. Dismissed findings are already left out by the `state`
+filter above. SAST here includes infrastructure-as-code findings (KICS): the
+flow takes them too.
+
+## Read findings over MCP
+
+If the user turned on the `code_security` toolset (SKILL.md Step 5), prefer
+the MCP tools over the `glab` read above:
+
+- `list_vulnerabilities`: a project's findings, filterable by severity,
+  report type and state.
+- `get_vulnerability`: one finding. Since gitlab-org/gitlab!271041 (merged
+  2026-11-17; Self-Managed from 19.7) it also returns `dismissalReason`,
+  `stateComment`, `confirmedBy` and `dismissedBy`, so the agent can tell why
+  a finding was dismissed, not only that it was.
+
+These tools need Ultimate. If they aren't listed after the reload, check the
+header includes `code_security` and the defaults (`references/harnesses.md`).
 
 ## 2. Read the available profiles
 
