@@ -144,7 +144,8 @@ automation in 21 projects without `userId`, with no duplicates on a rerun.
   and Ultimate, while the API reference says Ultimate only. Add the UI path as
   a fallback.
 - Check `shared_runners_enabled` on every offering, not only Self-Managed, and
-  explain how to fix it when it's off.
+  explain how to fix it when it's off. Replaced in 0.4.0 by
+  `duoWorkflowRunnerAvailable`, before this check reached `main`.
 - Make `list_duo_agents_and_flows` the test of the setup. The summary lists
   the flows and flags Developer, Code Review or Fix CI/CD Pipeline if missing.
 - End with one prompt to try for each available flow.
