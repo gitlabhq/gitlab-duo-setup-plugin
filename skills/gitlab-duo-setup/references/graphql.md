@@ -225,3 +225,26 @@ found them all and created none. With a `userId` that isn't the entry's
 service account, the request fails with "You are not authorized to use this
 service account in this project". Check `errors` and `errorReason` in every
 response.
+
+### Rate limit
+
+GitLab allows about 30 saves of agents, flows and automations a minute per
+user. Past that, `aiFlowTriggerCreate` returns an error saying the user saved
+them "too many times. Try again in a minute." Wait 65 seconds and send the
+same request again, up to 3 times; don't skip the project.
+`scripts/automations.sh` does this. Seen on GitLab.com in an automated run
+(by Claude, an AI agent) that created automations for 18 projects in a row.
+
+## Duo Enterprise add-on
+
+Code Review consent (SKILL.md 3a) only matters with Duo Enterprise. Group
+Owners can read the add-ons:
+
+```bash
+glab api graphql -F n="gid://gitlab/Group/$GROUP_ID" -f query='
+query($n: NamespaceID) { addOnPurchases(namespaceId: $n) { name purchasedQuantity } }'
+```
+
+`DUO_ENTERPRISE` in the list means the group has it. Run on GitLab.com on
+2026-11-17 by Claude (an AI agent). If the call fails, send the consent with the flow list anyway:
+GitLab ignores it without Duo Enterprise.
