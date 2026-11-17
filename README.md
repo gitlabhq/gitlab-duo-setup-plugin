@@ -98,15 +98,27 @@ No API covers these, so the skill gives you a direct link for each:
 
 ## What has been tested
 
-Tested on GitLab.com: the GraphQL reads for flows, runners and automations,
-and creating the Fix CI/CD Pipeline automation in one project.
+Tested on GitLab.com (Ultimate), in a fresh subgroup with 22 projects, on
+2026-11-17:
+
+- The group request for automatic Code Review and MCP for Agent Platform:
+  both reached every project.
+- `enabled_foundational_flows`: GitLab sets every project to exactly the list
+  sent. A list missing flows turned those flows off in all 22 projects within
+  seconds, and sending the full list restored them. That's why the skill
+  builds the list from both the group and the project, and sends it only to
+  the top-level group.
+- The readiness check and creating the Fix CI/CD Pipeline automation in 21
+  projects, without `userId`, with no duplicates on a second run. A project
+  without CI/CD was skipped.
+- Running Resolve SAST Vulnerability on one finding from the agent, with the
+  MCP tool `start_duo_session`.
 
 Checked against GitLab's source (19.6) but not yet run against a live group:
 
-- The single group request that turns on flow execution, foundational flows,
-  the flows themselves, and automatic Code Review.
-- Waiting for GitLab to provision each project, and creating the automation
-  across many projects.
+- The group request on a top-level group, and on Premium.
+- The `duo_remote_flows_availability` and `duo_foundational_flows_availability`
+  fields (already on in the test group) and Code Review flow consent.
 - Applying security profiles to a group.
 
 GitLab marks the automation mutation and the security profile mutations as

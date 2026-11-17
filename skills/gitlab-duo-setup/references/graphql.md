@@ -48,10 +48,11 @@ query($project: ID!, $projectId: ProjectID!, $groupId: GroupID!) {
       }
     }
   }
-  groupFlows: aiCatalogConfiguredItems(groupId: $groupId, first: 100) {
+  groupFlows: aiCatalogConfiguredItems(groupId: $groupId, itemTypes: [FLOW], first: 100) {
+    pageInfo { hasNextPage endCursor }
     nodes { id enabled webPath item { id name foundationalFlowReference } serviceAccount { id username } }
   }
-  projectFlows: aiCatalogConfiguredItems(projectId: $projectId, first: 100) {
+  projectFlows: aiCatalogConfiguredItems(projectId: $projectId, itemTypes: [FLOW], first: 100) {
     nodes { id enabled webPath item { id name foundationalFlowReference } parentItemConsumer { id } }
   }
 }'
@@ -65,17 +66,38 @@ How to read it:
   verification. Report the ones with `value: false`. If `feature_available`
   or `developer_access` is `false`, Duo Agent Platform isn't available to this
   user in this project: stop before the flow and automation steps.
-- `groupFlows` has one entry per flow the group has on.
-  `foundationalFlowReference` names the flow, for example `code_review/v1`.
-  The list of these is `CURRENT_FLOWS` in SKILL.md 1c.
+- `groupFlows` has one entry per flow the group has on, custom flows
+  included. `foundationalFlowReference` names a foundational flow, for
+  example `code_review/v1`; it's `null` for custom flows, and `item` itself
+  can be `null`, so skip those entries. On GitLab.com on 2026-11-17, a
+  top-level group returned 63 flow entries, 13 of them foundational.
+- If `groupFlows.pageInfo.hasNextPage` is `true`, read the next page before
+  building `CURRENT_FLOWS`, with the same `groupFlows` field and
+  `after: "<endCursor>"`. Missing a page means missing flows, and SKILL.md 3a
+  would turn them off.
+- `enabledFoundationalFlows` is the list the project actually runs. In a
+  subgroup, `groupFlows` is empty even when the projects run flows, because
+  the flows are configured on the top-level group. `CURRENT_FLOWS` in SKILL.md
+  1c is the union of both lists.
 - `webPath` on any entry is that flow's configuration page. Print it as
   `https://<HOST><webPath>`.
 
 ## Personal-namespace projects
 
 If `namespace.kind` is `user`, there is no group ID, so the read above fails.
-Use the same query without `$groupId` and the `groupFlows` alias. Don't run
-any mutation for a personal project: flows need a group.
+Use this project-only read instead:
+
+```bash
+glab api graphql -F project="$PROJECT" -f query='
+query($project: ID!) {
+  project(fullPath: $project) {
+    duoWorkflowRunnerAvailable
+    duoWorkflowStatusCheck { enabled foundationalFlowsEnabled enabledFoundationalFlows checks { name value message } }
+  }
+}'
+```
+
+Don't run any mutation for a personal project: flows need a group.
 
 On GitLab.com on 2026-11-16, a Free personal project returned
 `feature_available: false` and `developer_access: false`. Tell the user that
@@ -85,8 +107,9 @@ GitLab Credits.
 ## Find a flow's catalog item
 
 The readiness check needs the catalog item ID of Fix CI/CD Pipeline. Take it
-from `groupFlows` (`item.id` where `foundationalFlowReference` is
-`fix_pipeline/v1`). If it isn't there yet:
+from `groupFlows` or `projectFlows` (`item.id` where
+`foundationalFlowReference` is `fix_pipeline/v1`). On GitLab.com it was
+`gid://gitlab/Ai::Catalog::Item/1800` on 2026-11-17. If neither list has it:
 
 ```bash
 glab api graphql -f query='
@@ -138,7 +161,14 @@ query($project: ID!, $item: AiCatalogItemID!) {
 - The same response has the project's automations, for the duplicate check.
 
 For many projects, put several projects in one request with aliases
-(`p1: project(fullPath: "a/b") { ... }`, `p2: ...`), about 20 at a time.
+(`p1: project(fullPath: "a/b") { ... }`, `p2: ...`), 5 at a time. Each
+project costs about 38 against GitLab's query complexity limit of 250, so 20
+in one request fails with "Query has complexity of 760, which exceeds max
+complexity of 250".
+
+In a test on GitLab.com on 2026-11-17, 21 new projects were ready as soon as
+they were created, and a change to the group's flow list reached 22 projects
+in under 30 seconds.
 
 ## Read a project's automations
 
@@ -188,8 +218,10 @@ EOF
 ```
 
 The flow itself only runs on failed, finished pipelines, so the filter
-matches what the flow accepts. This request, with a matching `userId`, was
-tested on GitLab.com on 2026-11-16: it created an active automation linked to
-Fix CI/CD Pipeline and its service account. Leaving `userId` out follows
-GitLab's source but hasn't been run yet. Check `errors` and `errorReason` in
-every response.
+matches what the flow accepts. Tested on GitLab.com on 2026-11-17 without
+`userId`, in 21 projects: each request created an active automation that
+runs as the Fix CI/CD Pipeline service account, and a second run of the loop
+found them all and created none. With a `userId` that isn't the entry's
+service account, the request fails with "You are not authorized to use this
+service account in this project". Check `errors` and `errorReason` in every
+response.

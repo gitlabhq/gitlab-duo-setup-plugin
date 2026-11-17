@@ -3,7 +3,7 @@ name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.0"
+  version: "0.5.1"
 ---
 
 # gitlab-duo-setup
@@ -138,8 +138,19 @@ project.
 - If the enablement checks show `feature_available` or `developer_access` as
   `false`, Duo Agent Platform isn't available here. Quote the check and stop
   before Step 3.
-- Build `CURRENT_FLOWS`: the `foundationalFlowReference` of every entry in
-  `groupFlows`. You'll add to this list, never remove from it.
+- Build `CURRENT_FLOWS`, the flows the group has on now. You'll add to this
+  list, never remove from it. Take the union of:
+  - every non-null `foundationalFlowReference` in `groupFlows`, read to the
+    last page (a group with custom flows can have more than 100 entries, and
+    a foundational flow on page 2 would otherwise be dropped);
+  - the project's `duoWorkflowStatusCheck.enabledFoundationalFlows`, which is
+    the list the project actually runs, inherited or not.
+
+  If `groupFlows` is empty but the project lists flows, the flows come from
+  higher up (the read isn't from the top-level group). Use the project's list.
+  If both are empty, `CURRENT_FLOWS` is empty only if the group has no flows
+  yet: check `foundationalFlowsEnabled` and the Group Duo configuration page
+  before treating it as empty.
 
 ### 1d. Group mode only: list the projects
 
@@ -208,8 +219,15 @@ EOF
 Build the body from the approved plan only:
 
 - `enabled_foundational_flows` is `CURRENT_FLOWS` plus the approved flows,
-  without duplicates. If 1c couldn't read `CURRENT_FLOWS`, don't send this key
-  at all; give the Group Duo configuration link instead.
+  without duplicates. GitLab sets every project in the group to exactly this
+  list and turns off any flow that's missing from it. So:
+  - Send it only to the top-level group (`GROUP_ID`), never to a subgroup.
+  - If the approved flows are already in `CURRENT_FLOWS`, leave the key out:
+    nothing would change.
+  - If 1c couldn't read `CURRENT_FLOWS`, or got an empty list while the
+    project runs flows, don't send the key; give the Group Duo configuration
+    link instead.
+  - Before sending, show the user the full list and how many flows it has.
 - Send `duo_remote_flows_availability` only if the group's
   `duo_remote_flows_enabled` is `false`. Send
   `duo_foundational_flows_availability` only if the project's status check
@@ -227,15 +245,19 @@ the group: the Groups API ignores them. The `..._availability` fields are the
 ones it accepts. Don't send `duo_foundational_flows_enabled` on a project
 either: the Projects API doesn't accept it. It cascades from the group.
 
-Then read the group again (1a and the `groupFlows` read). Check that every
-flow you sent is in the list, and report any that's missing. 4d confirms which
-flows can actually start.
+Then read the group again (1a and the `groupFlows` read) and, after about 30
+seconds, the project's `enabledFoundationalFlows`. Check that every flow you
+sent is listed and that the project has no fewer flows than before. If it has
+fewer, send the group request again right away with the flows it had before
+added back, and tell the user. 4d confirms which flows can actually start.
 
 ### 3b. Wait for the group change to reach the projects
 
 GitLab turns the flows on in each project in background jobs: it creates each
 flow's service account, adds it to every project, and sets up the project
-entries. In a large group this takes minutes.
+entries. In a test group of 22 projects this took under 30 seconds, and new
+projects were ready as soon as they were created; a large group can take
+minutes.
 
 For each project from 1d, run the readiness check in `references/graphql.md`
 ("Check a project is ready"). A project is ready when it has a Fix CI/CD
@@ -253,8 +275,10 @@ For each ready project (group mode) or this project (project mode):
    change it: someone may have turned it off on purpose.
 3. Otherwise create one ("Create the Fix CI/CD Pipeline automation").
 
-Work in batches of 20 and print progress after each batch. Quote any error
-and keep going; one failing project doesn't stop the rest.
+Read readiness and automations 5 projects per GraphQL request (more than 6
+goes over GitLab's query complexity limit), create the automations one at a
+time, and print progress every 20 projects. Quote any error and keep going;
+one failing project doesn't stop the rest.
 
 ### 3d. Check the cascade landed
 
@@ -389,7 +413,9 @@ On no, go to Step 7. On yes, follow `references/security.md`. In short:
 
 1. Add `sast_fp_detection/v1`, `secrets_fp_detection/v1` and
    `resolve_sast_vulnerability/v1` to the group's flows: one more group
-   request, built the same way as 3a from a fresh read of `CURRENT_FLOWS`.
+   request, built the same way as 3a from a fresh read of `CURRENT_FLOWS`
+   (same rules: the full list, top-level group only, left out if nothing
+   changes).
 2. Apply the SAST profile to the group, only to projects that don't scan yet
    (`FILL_SCAN_GAPS`). No `.gitlab-ci.yml` edits.
 3. Apply the automated triage and remediation profile to the group, only to
@@ -455,8 +481,13 @@ flow actually run, not only read results:
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
 - **Security triage and remediation** (if on): after the next SAST scan on the
-  default branch, open the vulnerability report and run false positive
-  detection or Resolve with Agentic AI on a High or Critical finding.
+  default branch, pick a High or Critical SAST finding. To run the fix from
+  the agent, find it with the vulnerabilities read in `references/security.md`
+  and start a session with `start_duo_session`, the project's Resolve SAST
+  Vulnerability `ai_catalog_item_consumer_id` from `list_duo_agents_and_flows`,
+  and the vulnerability's numeric ID as the goal. That's the same request as
+  **Resolve with Agentic AI** on the vulnerability page. Review the merge
+  request it opens before merging: the fix can go beyond the finding.
 
 Then point to the follow-up loop: once the flows have posted, the agent reads
 the review threads and the fix, applies them locally, pushes, and checks the

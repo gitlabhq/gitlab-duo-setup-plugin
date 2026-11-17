@@ -24,8 +24,10 @@ profile goes on first.
 
 ## 1. Add the flows to the group
 
-Read `groupFlows` again (`references/graphql.md`, "Read flows, runners and
-automations"), because Step 3 changed it. Then send one request:
+Build `CURRENT_FLOWS` again as in SKILL.md 1c (`groupFlows` to the last page,
+plus the project's `enabledFoundationalFlows`), because Step 3 changed it. If
+all three flows are already in it, skip this request. Otherwise send one
+request:
 
 ```bash
 glab api -X PUT "groups/$GROUP_ID" -H "Content-Type: application/json" --input - <<'EOF'
@@ -38,7 +40,36 @@ EOF
 Same rules as SKILL.md 3a: current flows plus the new ones, never fewer. If
 GitLab answers with a rate limit error, because Step 3 just changed the group,
 wait a minute and send it once more. Then read `groupFlows` again and check
-the three flows are listed.
+the three flows are listed, and that the project has no fewer flows than
+before.
+
+Resolve SAST Vulnerability starts on its own (after a scan, or in bulk from
+the vulnerability report) only in projects where the triage and remediation
+profile in step 3 applies, or where the project setting
+`duo_sast_vr_workflow_enabled` is on. GitLab checks either one. A manual run
+on a single finding works without them.
+
+## Find SAST findings
+
+To list a project's SAST findings, for the summary or for a manual run:
+
+```bash
+glab api graphql -F project="<path_with_namespace>" -f query='
+query($project: ID!) {
+  project(fullPath: $project) {
+    sast: vulnerabilitySeveritiesCount(reportType: [SAST]) { critical high medium low }
+    vulnerabilities(first: 20, reportType: [SAST], state: [DETECTED, CONFIRMED], sort: severity_desc) {
+      nodes { id title severity webUrl location { ... on VulnerabilityLocationSast { file startLine } } }
+    }
+  }
+}'
+```
+
+The numeric part of `id` is the goal for a manual Resolve SAST Vulnerability
+run (SKILL.md Step 7). Before starting one, check `falsePositive` and
+`mergeRequest` on the vulnerability, so you don't rerun a finding that's
+flagged or already has a fix MR. SAST here includes infrastructure-as-code
+findings (KICS): the flow takes them too.
 
 ## 2. Read the available profiles
 

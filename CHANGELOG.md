@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.1 (2026-11-17)
+
+From testing 0.5.0 on a fresh Ultimate subgroup with 22 projects.
+
+**Fixes**
+- Build the group's current flow list from every page of `groupFlows` plus
+  the project's `enabledFoundationalFlows`. In a subgroup `groupFlows` is
+  empty, and a list built from it alone turned 11 flows off in every project.
+  Send `enabled_foundational_flows` only to the top-level group, leave it out
+  when nothing changes, and check afterwards that no project lost a flow.
+- Skip `groupFlows` entries without a foundational flow reference (custom
+  flows, null items), and read past the first page.
+- Read readiness 5 projects per GraphQL request. 20 exceeded GitLab's query
+  complexity limit.
+- Step 7: run Resolve SAST Vulnerability on one finding from the agent with
+  `start_duo_session`, and review the fix merge request before merging. Add a
+  SAST findings read to `references/security.md`, and note that automatic and
+  bulk runs need the triage and remediation profile or
+  `duo_sast_vr_workflow_enabled`.
+- Restore the copy-paste read for personal-namespace projects.
+
+**Tested on GitLab.com:** automatic Code Review and MCP for Agent Platform
+cascading from a group; the flow list cascade; the readiness check and the
+automation in 21 projects without `userId`, with no duplicates on a rerun.
+
+**Not tested end to end yet**
+- The group request on a top-level group and on Premium, the availability
+  fields, and Code Review flow consent.
+- Applying security profiles to a group.
+
 ## 0.5.0 (2026-11-17)
 
 **Group-wide setup**
