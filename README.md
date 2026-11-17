@@ -9,11 +9,14 @@ agentic engineering:
    whichever agent or tool the change came from.
 2. **Creates the automation that runs Fix CI/CD Pipeline on failed
    pipelines**, in every project of the group.
-3. **Optionally turns on the security flows** (Ultimate): Security Review on
-   merge requests, plus SAST triage and remediation.
-4. **Connects your agent to the GitLab MCP server**
+3. **Connects your agent to the GitLab MCP server**
    (`https://<host>/api/v4/mcp`) and walks you through signing in with OAuth,
    so your agent can read what the flows found and act on it.
+
+On Ultimate, once that works, it asks one more question: whether to add
+security triage and remediation (SAST false positive detection and agentic
+vulnerability resolution, with SAST turned on where projects don't scan yet).
+If that step fails, the core setup stays as it is.
 
 It shows the full plan, with what each flow costs, and asks before changing
 anything. Run it again any time: it skips what's already set up.
@@ -117,5 +120,5 @@ skills/gitlab-duo-setup/
   SKILL.md                  the skill
   references/harnesses.md   MCP config and sign-in per harness
   references/graphql.md     queries and mutations for flows, runners and automations
-  references/security.md    security flows and profiles (Ultimate)
+  references/security.md    optional security step (Ultimate)
 ```

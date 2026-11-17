@@ -47,13 +47,18 @@
 - The prompts at the end now make each flow run, instead of only reading
   results (from the review of !5).
 
-**Security flows (Ultimate, opt-in)**
-- Add `references/security.md` and Step 4: three levels, from Security Review
-  only, to triage and remediation with the automated triage and remediation
-  profile (Conservative preset recommended), to automatic coverage with the
-  SAST and Security Review profiles.
-- Explain that Security Review is beta and needs experiment and beta features
-  on for the group, and ask before turning that on.
+**Security (Ultimate, optional last step)**
+- The core setup (Code Review, Fix CI/CD Pipeline, MCP) asks no security
+  questions. After it works, Ultimate groups get one yes/no question (Step 5).
+- On yes: turn on the GA SAST and secret false positive detection and Resolve
+  SAST Vulnerability flows, apply the SAST profile to projects that don't scan
+  yet (`FILL_SCAN_GAPS`, no CI file edits), and apply the automated triage and
+  remediation profile (Conservative preset recommended).
+- If anything in the security step fails, it stops there and leaves the core
+  setup as it is.
+- Security Review (beta) is mentioned in one line and only set up on request,
+  because it needs experiment and beta features on for the whole group.
+- Add `references/security.md`.
 
 **Not tested end to end yet**
 - The group request with `enabled_foundational_flows`, the availability
