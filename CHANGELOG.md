@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.5.0 (2026-11-17)
+
+**Group-wide setup**
+- Add group mode for top-level group Owners: one run sets up the group and
+  every project in it, instead of only the current project. Project mode
+  stays for Maintainers who aren't group Owners.
+- Turn on foundational flows with the Groups API (`enabled_foundational_flows`),
+  the same path the group settings page and GitLab's end-to-end tests use.
+  GitLab then provisions each project in the background. The skill always
+  sends the group's current flows plus the new ones, so it never turns a flow
+  off.
+- Stop creating flow entries with `aiCatalogItemConsumerCreate`. It doesn't
+  update the group's flow selection, so the settings page showed the flow as
+  off.
+- Turn on automatic Code Review at the group level
+  (`auto_duo_code_review_enabled`), which cascades to every project. Then
+  list any project that kept its own setting.
+- Create the Fix CI/CD Pipeline automation in every project with CI/CD, after
+  checking each project is provisioned and has no automation yet. Running the
+  skill twice creates no duplicates. Fix CI/CD Pipeline has no default
+  automation, so this step is always needed.
+- Send all group changes in one request, because GitLab rate-limits changes
+  that cascade to every project.
+- Offer Code Review flow consent for groups with the Duo Enterprise add-on.
+  Without it, those users keep getting the classic review.
+
+**Fixes**
+- Group flow execution is now written with `duo_remote_flows_availability`.
+  The Groups API ignores `duo_remote_flows_enabled`, so 0.4.0's group write
+  had no effect.
+- Allow foundational flows is now written with
+  `duo_foundational_flows_availability` on the group. The Projects API doesn't
+  accept `duo_foundational_flows_enabled`, so 0.4.0's project write had no
+  effect; the setting cascades from the group.
+- Only send settings that are off, since the `..._availability` fields also
+  clear an Owner's lock.
+- The automation request no longer sends `userId`. With a catalog entry,
+  GitLab uses the entry's service account and rejects a `userId` that doesn't
+  match it.
+- The readiness check asks for the project's own flow entry
+  (`includeInherited: false`), so a project doesn't look ready before GitLab
+  has set it up.
+- MCP: when an existing `GitLab` entry has a toolsets header without
+  `work_items`, offer to rewrite it (from the review of !5).
+- The prompts at the end now make each flow run, instead of only reading
+  results (from the review of !5).
+
+**Security (Ultimate, optional last step)**
+- The core setup (Code Review, Fix CI/CD Pipeline, MCP) asks no security
+  questions. After it works, Ultimate groups get one yes/no question (Step 5).
+- On yes: turn on the GA SAST and secret false positive detection and Resolve
+  SAST Vulnerability flows, apply the SAST profile to projects that don't scan
+  yet (`FILL_SCAN_GAPS`, no CI file edits), and apply the automated triage and
+  remediation profile (Conservative preset recommended).
+- If anything in the security step fails, it stops there and leaves the core
+  setup as it is.
+- Security Review (beta) is mentioned in one line and only set up on request,
+  because it needs experiment and beta features on for the whole group.
+- Add `references/security.md`.
+
+**Not tested end to end yet**
+- The group request with `enabled_foundational_flows`, the availability
+  fields and `auto_duo_code_review_enabled`. Checked against GitLab's source
+  and its end-to-end test, not run against a live group.
+- The readiness check and the automation loop across many projects.
+- Creating the automation without `userId`.
+- Applying security profiles to a group.
+
 ## 0.4.0 (2026-11-16)
 
 - Enable the Developer, Code Review and Fix CI/CD Pipeline foundational flows
