@@ -255,7 +255,6 @@ Then read `groupFlows` and the project's `enabledFoundationalFlows` again.
 If the project still has fewer flows, stop and tell the user which flows are
 off and in which projects, and give them the Group Duo configuration link to
 turn them back on. 4d confirms which flows can actually start.
-added back, and tell the user. 4d confirms which flows can actually start.
 
 ### 3b. Wait for the group change to reach the projects
 
