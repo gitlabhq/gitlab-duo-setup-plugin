@@ -1,28 +1,41 @@
 # GitLab Duo setup skill
 
-An Agent Skill for Claude Code, Codex, Cursor, Devin and OpenCode users. Load it, ask your agent
-to "set up GitLab Duo", and it does two things:
+An Agent Skill for Claude Code, Codex, Cursor, Devin and OpenCode users. Load
+it, ask your agent to "set up GitLab Duo", and it sets up GitLab for
+agentic engineering:
 
-1. **Turns on GitLab Duo Agent Platform** for the current project and its
-   top-level group, using `glab api` (REST and GraphQL): the Duo settings, the
-   Developer, Code Review and Fix CI/CD Pipeline flows, and an automation that
-   runs Fix CI/CD Pipeline on failed pipelines. It shows what it will change
-   and asks before changing anything.
-2. **Connects your agent to the GitLab MCP server** (`https://<host>/api/v4/mcp`)
-   and walks you through signing in with OAuth.
+1. **Turns on Code Review and Fix CI/CD Pipeline for your group.** Every new
+   merge request gets a Duo review, and every failed pipeline gets a fix,
+   whichever agent or tool the change came from.
+2. **Creates the automation that runs Fix CI/CD Pipeline on failed
+   pipelines**, in every project of the group.
+3. **Optionally turns on the security flows** (Ultimate): Security Review on
+   merge requests, plus SAST triage and remediation.
+4. **Connects your agent to the GitLab MCP server**
+   (`https://<host>/api/v4/mcp`) and walks you through signing in with OAuth,
+   so your agent can read what the flows found and act on it.
+
+It shows the full plan, with what each flow costs, and asks before changing
+anything. Run it again any time: it skips what's already set up.
 
 It works on GitLab.com, Self-Managed and Dedicated.
+
+## Who can run it
+
+- **Owner of the top-level group**: sets up the whole group and every
+  project in it. This is the recommended path.
+- **Maintainer of a project**: sets up that project, and tells you what to ask
+  your group Owner to turn on.
 
 ## Requirements
 
 - `git` and [`glab`](https://gitlab.com/gitlab-org/cli#installation),
   signed in: `glab auth login`
-- Maintainer on the project to change project settings; Owner on the top-level
-  group to change group settings. With less access, the skill tells you who to ask.
 - GitLab Premium or Ultimate, or Free with GitLab Credits, for Duo Agent
-  Platform.
+  Platform. The security flows need Ultimate.
 - Credits: the skill itself spends none. The flows it turns on do, and when an
-  automation starts a flow, the credits are billed to your top-level namespace.
+  automation or a service account starts a flow, the credits are billed to your
+  top-level namespace.
 
 ## Install
 
@@ -53,55 +66,49 @@ Then reload your harness so it sees the new skill:
 
 Some harnesses read other harnesses' skill directories. Devin and OpenCode
 both also read `~/.claude/skills/` (Claude Code) and `~/.agents/skills/`
-(Codex). If you use more than one, install the
-skill in one shared place, so it isn't listed twice.
+(Codex). If you use more than one, install the skill in one shared place, so
+it isn't listed twice.
 
 ## Run the skill
 
-Once you have the skill installed in your harness, invoke using the syntax that your harness requires. For example, for Claude and Cursor use the `/gitlab-duo-setup` slash command.
-
-| Harness | Syntax| 
-| --- | --- | 
-| Claude Code | `/gitlab-duo-setup` | 
-| Codex | `$gitlab-duo-setup` | 
-| Cursor | `/gitlab-duo-setup` | 
-| Devin | `@skills:gitlab-duo-setup` | 
+| Harness | Syntax |
+| --- | --- |
+| Claude Code | `/gitlab-duo-setup` |
+| Codex | `$gitlab-duo-setup` |
+| Cursor | `/gitlab-duo-setup` |
+| Devin | `@skills:gitlab-duo-setup` |
 | OpenCode | `@gitlab-duo-setup` |
 
 ## What is not automated yet
 
-No API covers these, so the skill gives you a direct link to the right page
-for each:
+No API covers these, so the skill gives you a direct link for each:
 
 - The group's MCP client access setting (Allow connection to GitLab). The
   skill can't read it, but a successful MCP sign-in shows it's on.
-- Runners, if the project has none that can run flows: turning on hosted
-  runners, or a runner tagged `gitlab--duo`. The skill checks this through
-  GraphQL and only asks when it's needed.
+- Runners, for projects with none that can run flows. The skill lists those
+  projects and doesn't turn on hosted runners without asking.
+- The Allow foundational flows toggle on a project that turned it off on its
+  own. The skill lists those projects.
 - Self-Managed: connecting the instance to an AI gateway.
-- Push rules, if the project has them: allowing the `duo-*` service accounts.
+- Push rules, if a project has them: allowing the `duo-*` service accounts.
 - The OAuth sign-in itself, which happens in your browser.
 
-The links were checked against GitLab 19.6, and each manual step also links
-its docs page.
+## What has been tested
 
-What has been observed on GitLab.com: the group's Duo Agent Platform and MCP
-fields read correctly from `ai_settings`, and the skill confirms the setup by
-listing the project's flows through the MCP server. Not yet observed: turning
-those group fields on through the API, because they were already on in the
-test group. The skill re-reads the group afterwards to confirm, and gives the
-UI path if the change doesn't take.
+Tested on GitLab.com: the GraphQL reads for flows, runners and automations,
+and creating the Fix CI/CD Pipeline automation in one project.
 
-Not yet tested:
+Checked against GitLab's source (19.6) but not yet run against a live group:
 
-- Automatic Code Review (`auto_duo_code_review_enabled`) on a Premium
-  project. The skill sends it in a request of its own and reports the result.
-- Enabling foundational flows through GraphQL. GitLab marks this mutation as
-  Experiment. If it fails, the skill gives you the link to do it in the UI.
+- The single group request that turns on flow execution, foundational flows,
+  the flows themselves, and automatic Code Review.
+- Waiting for GitLab to provision each project, and creating the automation
+  across many projects.
+- Applying security profiles to a group.
 
-Tested on GitLab.com: the GraphQL queries that read flows, runners and
-automations, and creating the Fix CI/CD Pipeline automation. That mutation is
-also marked Experiment by GitLab, so it could change between releases.
+GitLab marks the automation mutation and the security profile mutations as
+Experiment, so they can change between releases. If one fails, the skill
+quotes the error and gives you the link to do it by hand.
 
 ## Layout
 
@@ -110,4 +117,5 @@ skills/gitlab-duo-setup/
   SKILL.md                  the skill
   references/harnesses.md   MCP config and sign-in per harness
   references/graphql.md     queries and mutations for flows, runners and automations
+  references/security.md    security flows and profiles (Ultimate)
 ```
