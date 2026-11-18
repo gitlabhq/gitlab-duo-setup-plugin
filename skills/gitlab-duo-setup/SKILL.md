@@ -1,9 +1,9 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
-compatibility: Requires git and glab (authenticated). Works on GitLab.com, Self-Managed and Dedicated.
+description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
+compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.1"
+  version: "0.5.3"
 ---
 
 # gitlab-duo-setup
@@ -104,6 +104,7 @@ projects" in `references/graphql.md`, and skip everything group-wide.
 
 From the group: `id` (`GROUP_ID`), `duo_features_enabled`,
 `duo_remote_flows_enabled`, `experiment_features_enabled`,
+`ip_restriction_ranges`, `shared_runners_setting` (both for Step 6),
 `auto_duo_code_review_enabled` if present, and inside `ai_settings`:
 `duo_agent_platform_enabled` and `duo_workflow_mcp_enabled`. A field that's
 missing can't be read through the API: report "can't read via API" with the
@@ -116,6 +117,10 @@ them as "can't read", not off.
 On GitLab.com, also read the plan with `glab api "namespaces/$GROUP_ID"`
 (`plan`). GitLab returns it only to group Owners and admins. Keep it for
 Step 5; don't mention security before then.
+
+In group mode, also read whether the group has Duo Enterprise ("Duo
+Enterprise add-on" in `references/graphql.md`). Step 3a uses it for Code
+Review consent.
 
 ### 1b. Pick the mode
 
@@ -177,12 +182,15 @@ and what it costs.
 | Fix CI/CD Pipeline flow | Group | Adds `fix_pipeline/v1` to the group's flows | None by itself |
 | Fix CI/CD Pipeline automation | Every project with CI (N projects) | Each failed pipeline starts a session that can push a fix or open an MR | Credits per failed pipeline |
 
+If a setting is already on, say so and leave it out of the plan.
+
 Ask about these only if they apply:
 
-- **Code Review for Duo Enterprise seats**: only if the group has the Duo
+- **Code Review for Duo Enterprise seats**: only if 1a found the Duo
   Enterprise add-on. Without consent, those users keep getting the classic,
-  non-agentic review instead of the Code Review flow. Sending consent routes
-  their reviews to the flow. Ask; don't assume.
+  non-agentic review instead of the Code Review flow, and nothing says so.
+  Approving Code Review in this plan gives the consent (3a); say so on the
+  Code Review line.
 - **Developer flow** (`developer/v1`): only if the user asks for it. Assign an
   issue to Duo and it opens an MR.
 
@@ -235,7 +243,19 @@ Build the body from the approved plan only:
   two fields turn the setting on and also let subgroups and projects change
   it, so don't send them when the setting is already on.
 - Include `ai_settings_attributes` keys only for the fields that are off.
-- Add `"create_code_review_flow_consent": true` only if the user approved it.
+- Whenever the body has `enabled_foundational_flows` with `code_review/v1` in
+  it, add `"create_code_review_flow_consent": true`. GitLab reads the consent
+  only in a request that also sends `enabled_foundational_flows`, and ignores
+  it for groups without Duo Enterprise
+  (`ee/app/services/ee/groups/update_service.rb`,
+  `handle_code_review_flow_consent_update`), so there's nothing to guess.
+- If the group has Duo Enterprise and Code Review is already in
+  `CURRENT_FLOWS`, the rules above leave the flow list out, so consent is
+  never recorded. It can't be read over the API, and it may never have been
+  given. Offer it as its own plan line; on a yes, send
+  `enabled_foundational_flows` as `CURRENT_FLOWS` unchanged plus the consent.
+  The flow-list rules still apply: top-level group only, full list, shown
+  before sending.
 - Add `"duo_features_enabled": true` only if the group reports it `false`.
   The API documents it for Self-Managed; on GitLab.com, if it's off, give the
   Group Duo overview link instead.
@@ -264,11 +284,37 @@ entries. In a test group of 22 projects this took under 30 seconds, and new
 projects were ready as soon as they were created; a large group can take
 minutes.
 
+**If `jq` is installed, run the script that ships with this skill instead of
+3b and 3c by hand.** It lists the projects (skipping archived ones, empty ones
+and ones with CI/CD off), waits for each to be ready, skips projects that
+already have the automation, creates it in the rest, and retries when GitLab
+rate-limits saves. In a group with hundreds of projects, making these calls
+one at a time from the agent is slow and easy to get wrong halfway.
+
+```bash
+bash <skill-dir>/scripts/automations.sh --group "$GROUP" --hostname "$HOST"           # dry run
+bash <skill-dir>/scripts/automations.sh --group "$GROUP" --hostname "$HOST" --apply   # after the yes in Step 2
+```
+
+In project mode, pass `--project "$PROJECT"` instead of `--group`. The last
+line is `RESULT {...}` with `created`, `existing`, `inactive`, `pending`,
+`failed` and `no_runner`: use it for the summary. Exit code `3` means some
+projects are still pending or failed; running it again picks them up without
+duplicates. Right after 3a, GitLab may not have set the flow up for the group
+yet; the script then waits for each project instead of stopping. If projects
+are still pending when it ends, don't send the 3a request again: each repeat
+queues another background job, and on a busy day an older one can finish last
+and change the flow list back. Tell the user set-up is still running and to
+run the script (or the skill) again later. Without `jq`, do 3b and 3c as
+written below.
+
 For each project from 1d, run the readiness check in `references/graphql.md`
 ("Check a project is ready"). A project is ready when it has a Fix CI/CD
 Pipeline entry and an active service account. Check every 30 seconds for up
 to 10 minutes, then move on. Projects still not ready go on a "re-run later"
-list; running the skill again picks them up without creating duplicates.
+list; running the skill again picks them up without creating duplicates. Tell
+the user which projects are on that list and that their automation wasn't
+created yet.
 
 ### 3c. Fix CI/CD Pipeline automation in every project
 
@@ -282,8 +328,15 @@ For each ready project (group mode) or this project (project mode):
 
 Read readiness and automations 5 projects per GraphQL request (more than 6
 goes over GitLab's query complexity limit), create the automations one at a
-time, and print progress every 20 projects. Quote any error and keep going;
-one failing project doesn't stop the rest.
+time, and print progress every 20 projects.
+
+GitLab allows about 30 saves of agents, flows and automations a minute per
+user. When a create fails because the user saved them "too many times", wait
+65 seconds and retry the same project, up to 3 times. Don't move on to the
+next project on this error: in a group with more than about 30 projects,
+that silently leaves projects without the automation until someone runs the
+skill again. Quote any other error and keep going; one failing project
+doesn't stop the rest.
 
 ### 3d. Check the cascade landed
 
@@ -362,8 +415,12 @@ example) don't hand the turn back to you after sign-in.
   select **GitLab**, choose **Authenticate**, and approve in the browser.
 - **Codex**: ask the user to run `codex mcp login GitLab` and approve in the
   browser, then restart Codex.
-- **Cursor**: Settings > Cursor Settings > Tools & MCP > GitLab > Connect (or
-  the "Needs login" link), and approve in the browser.
+- **Cursor (IDE)**: Settings > Cursor Settings > Tools & MCP > GitLab > Connect
+  (or the "Needs login" link), and approve in the browser.
+- **Cursor (CLI)**: ask the user to run `cursor-agent mcp enable GitLab`, then
+  `cursor-agent mcp login GitLab`, in the project folder, and approve in the
+  browser. The CLI keeps the approval and the sign-in per folder. If
+  `cursor-agent mcp list` shows `GitLab: ready`, there's nothing to do.
 - **Devin**: `devin mcp add` usually starts the browser sign-in itself. If
   `devin mcp get GitLab` still shows it needs authentication, ask the user to
   run `devin mcp login GitLab` and approve in the browser.
@@ -388,6 +445,10 @@ trust it over the API fields from Step 1.
   whether `can_start_session` is true.
 - If one is missing, give the Group Duo configuration link.
 
+In OpenCode, `opencode mcp list` can show no servers, or "pending", for the
+first few seconds in a new folder. Check again before you report the server as
+missing.
+
 If the call fails, check the troubleshooting table in
 `references/harnesses.md`. A 403 can mean MCP client access is off for the
 group (Step 6).
@@ -409,10 +470,14 @@ mentioning it:
 Ask one question:
 
 > Your group is on Ultimate. Do you also want GitLab to triage and fix
-> security findings? It turns on SAST where projects don't scan yet, then
-> scores High and Critical findings for false positives and can open fix
-> merge requests. It works on findings once code lands on the default
-> branch, not inside the merge request. Yes or no?
+> security findings? It turns on SAST and secret detection where projects
+> don't scan yet, which also turns on secret push protection (pushes that
+> contain a secret are blocked) in those projects. Then, after every scan,
+> it scores findings of Medium severity and above for false positives and
+> opens fix merge requests for SAST findings, at most 15 open per project.
+> This runs automatically and uses credits in line with the number of
+> findings. It works on findings once code lands on the default branch,
+> not inside the merge request. Yes or no?
 
 On no, go to Step 7. On yes, follow `references/security.md`. In short:
 
@@ -423,13 +488,16 @@ On no, go to Step 7. On yes, follow `references/security.md`. In short:
    changes).
 2. Apply the SAST profile to the group, only to projects that don't scan yet
    (`FILL_SCAN_GAPS`). No `.gitlab-ci.yml` edits.
-3. Apply the automated triage and remediation profile to the group, only to
-   projects without one (`FILL_PROFILE_GAPS`). Recommend the Conservative
-   preset: triage and fixes run on demand, for High and above, with at most
-   five open fix merge requests per project. Offer Standard if the user wants
-   it to run automatically after every scan.
-
-4. Offer the opt-in `code_security` MCP toolset, so the agent can list
+3. Apply the secret detection profile to the group, only to projects with no
+   pipeline secret detection yet (`FILL_SCAN_GAPS`). No `.gitlab-ci.yml`
+   edits. It also turns on secret push protection in those projects.
+4. Apply the automated triage and remediation profile to the group, only to
+   projects without one (`FILL_PROFILE_GAPS`). Use the Standard preset:
+   triage and fixes run automatically after every scan, for Medium and
+   above, with at most 15 open fix merge requests per project. Offer
+   Conservative if the user wants to see results and cost first: on demand,
+   High and above, at most five open fix merge requests per project.
+5. Offer the opt-in `code_security` MCP toolset, so the agent can list
    findings and read their verdicts over MCP (`list_vulnerabilities`,
    `get_vulnerability`) instead of falling back to `glab`. It means adding
    the toolsets header with the defaults plus `code_security` (Step 4,
@@ -456,9 +524,24 @@ any that apply. Give the link for each:
   Owner turned it off. 4d confirms it. On Self-Managed and Dedicated, it's an
   instance setting.
   Docs: https://docs.gitlab.com/user/gitlab_duo/model_context_protocol/mcp_server/
-- **Runners**, for projects where `duoWorkflowRunnerAvailable` is `false`:
-  hosted runners, or a runner tagged `gitlab--duo` with a Docker-capable
-  executor. Docs: https://docs.gitlab.com/user/duo_agent_platform/flows/execution/
+- **Runners.** Flows run as CI jobs on an instance runner or a top-level
+  group runner tagged `gitlab--duo`, with a `docker`, `docker-autoscaler` or
+  `kubernetes` executor (not `shell`). Project and subgroup runners aren't
+  used. On GitLab.com, hosted runners do this by default, even for groups that
+  run their own CI on their own runners, except:
+  - the group has IP restrictions (`ip_restriction_ranges` from 1a): hosted
+    runners can't run flows. Add a top-level group runner and put its IP on
+    the group allowlist.
+  - `shared_runners_setting` isn't `enabled`: the docs don't say whether flows
+    still use hosted runners. Tell the user the first flow will show it.
+
+  `duoWorkflowRunnerAvailable: true` only means a runner with the tag is
+  registered. It doesn't show that the runner is online, can reach the Agent
+  Platform, or can pull the flow image, so treat the first flow (Step 7) as
+  the real check. List projects where it's `false` with the Runners link.
+  Don't register runners yourself: that's the platform team's infrastructure
+  and runner token.
+  Docs: https://docs.gitlab.com/user/duo_agent_platform/flows/execution/
 - **Project foundational flows toggle**, for projects that kept it off (3d).
 - **Push rules**: projects with push rules must allow the `duo-*` service
   accounts, or flows can't push fix branches.
@@ -492,9 +575,11 @@ flow actually run, not only read results:
 - **Fix CI/CD Pipeline**: the next failed pipeline starts it. To try it now on
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
-- **Security triage and remediation** (if on): after the next SAST scan on the
-  default branch, pick a High or Critical SAST finding. To run the fix from
-  the agent, find it with the vulnerabilities read in `references/security.md`
+- **Security triage and remediation** (if on): after the next scan on the
+  default branch, triage and fix merge requests start on their own for
+  findings of Medium severity and above (on demand only, if the user chose
+  Conservative). To run a fix now from the agent, pick a SAST finding
+  with the vulnerabilities read in `references/security.md`
   and start a session with `start_duo_session`, the project's Resolve SAST
   Vulnerability `ai_catalog_item_consumer_id` from `list_duo_agents_and_flows`,
   and the vulnerability's numeric ID as the goal. That's the same request as
@@ -506,4 +591,7 @@ the review threads and the fix, applies them locally, pushes, and checks the
 pipeline. If the user has the MR follow-up skill, suggest it here.
 
 The setup is done when a flow has run on a real merge request or pipeline,
-not only when the server is connected.
+not only when the server is connected. If the first session is still
+`created` (not `running`) after about 5 minutes (`get_duo_session`), no runner
+has picked up its job: open its `job_url` and go through the runner points in
+Step 6. Don't start another session; it would wait in the same queue.

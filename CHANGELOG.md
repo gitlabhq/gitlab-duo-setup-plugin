@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.5.3 (2026-11-18)
+
+**Fixes**
+- `scripts/automations.sh` no longer stops on a new group. It looked up the
+  Fix CI/CD Pipeline entry at group level before waiting, and right after
+  step 3a GitLab hasn't created that entry yet (it does so in background
+  jobs). So on a fresh group it exited at once with "Turn it on for the group
+  first", and agents then sent the 3a request again. It now takes the flow
+  from the AI Catalog when the group doesn't list it yet, says set-up is
+  still running, and waits for each project as before.
+- SKILL.md 3b: if projects are still pending, don't send the 3a request
+  again. Each repeat queues another background job, and on a busy day an
+  older one can finish last and change the flow list back.
+
+**How this was tested.** By Claude (an AI agent) on GitLab.com, 2026-11-18:
+- Seen in four of five harnesses on five new Ultimate trial groups: the
+  v0.5.2 script exited at once after 3a; three of the sessions then re-sent
+  the 3a request.
+- The new catalog lookup returns the Fix CI/CD Pipeline item
+  (`gid://gitlab/Ai::Catalog::Item/1800`) on the first page.
+- shellcheck: no warnings (the same `SC2016` notes as before).
+- Not run yet: the changed script end to end on a new group.
+
+## 0.5.2 (2026-11-17)
+
+**Fixes**
+- Retry on GitLab's limit of about 30 automation saves a minute per user:
+  wait 65 seconds and retry the same project, up to 3 times, instead of
+  moving on. Before, in groups with more than about 30 projects, some
+  projects silently got no automation until the skill was run again.
+- Add `scripts/automations.sh` (optional, needs jq): does steps 3b and 3c in
+  one run (readiness wait, duplicate check, create with the retry, summary)
+  instead of the agent making hundreds of calls one project at a time.
+  Without jq, the manual steps stay as they were, plus the retry rule.
+- Code Review consent: detect Duo Enterprise with `addOnPurchases` instead of
+  asking, and always send `create_code_review_flow_consent` with a flow list
+  that includes Code Review (GitLab ignores it without Duo Enterprise). If
+  Code Review was already on in a Duo Enterprise group, offer to record the
+  consent, since it can't be read.
+- Runners: read `ip_restriction_ranges` and `shared_runners_setting` on
+  GitLab.com and explain when hosted runners can't run flows; say that a
+  registered runner isn't proof; treat a first session stuck in `created` as
+  a runner problem.
+
+**How this was tested.** These checks were run by Claude (an AI agent), not
+yet repeated by a person end to end:
+- `scripts/automations.sh` as a dry run on a top-level Ultimate group with
+  Duo Enterprise (19 projects): 15 already had the automation, 3 empty
+  projects were skipped, 1 would be created. shellcheck passes. The `--apply`
+  path and the retry haven't run yet.
+- The `addOnPurchases` read on that group returned `DUO_ENTERPRISE`.
+- Earlier, with a separate script that sends the same requests, on the same
+  top-level group: `duo_foundational_flows_availability` and a merged flow
+  list (3 flows kept, Code Review and Fix CI/CD Pipeline added) with
+  `create_code_review_flow_consent`, then automations in 18 projects. That run
+  hit the "too many times" error. Afterwards, Code Review flow sessions
+  reviewed new MRs and Fix CI/CD Pipeline started on failed pipelines.
+
 ## 0.5.1 (2026-11-17)
 
 From testing 0.5.0 on a fresh Ultimate subgroup with 22 projects.
