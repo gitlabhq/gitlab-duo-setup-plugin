@@ -34,6 +34,8 @@ It works on GitLab.com, Self-Managed and Dedicated.
 
 - `git` and [`glab`](https://gitlab.com/gitlab-org/cli#installation),
   signed in: `glab auth login`
+- Optional: `jq`, so the automation step in a large group runs as one script
+  (`scripts/automations.sh`) instead of one call at a time
 - GitLab Premium or Ultimate, or Free with GitLab Credits, for Duo Agent
   Platform. The security flows need Ultimate.
 - Credits: the skill itself spends none. The flows it turns on do, and when an
@@ -114,11 +116,18 @@ Tested on GitLab.com (Ultimate), in a fresh subgroup with 22 projects, on
 - Running Resolve SAST Vulnerability on one finding from the agent, with the
   MCP tool `start_duo_session`.
 
+Run by Claude (an AI agent) on a top-level Ultimate group with Duo
+Enterprise, not yet repeated by a person (details in the CHANGELOG, 0.5.2):
+
+- The group request on a top-level group with
+  `duo_foundational_flows_availability`, a merged flow list and Code Review
+  flow consent, using a separate script that sends the same requests.
+- `scripts/automations.sh` as a dry run, and the Duo Enterprise read.
+
 Checked against GitLab's source (19.6) but not yet run against a live group:
 
-- The group request on a top-level group, and on Premium.
-- The `duo_remote_flows_availability` and `duo_foundational_flows_availability`
-  fields (already on in the test group) and Code Review flow consent.
+- The group request on Premium.
+- The `duo_remote_flows_availability` field (already on in both test groups).
 - Applying security profiles to a group.
 
 GitLab marks the automation mutation and the security profile mutations as
@@ -133,4 +142,5 @@ skills/gitlab-duo-setup/
   references/harnesses.md   MCP config and sign-in per harness
   references/graphql.md     queries and mutations for flows, runners and automations
   references/security.md    optional security step (Ultimate)
+  scripts/automations.sh    optional: the automation step for a whole group in one run (needs jq)
 ```

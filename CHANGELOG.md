@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.5.2 (2026-11-17)
+
+**Fixes**
+- Retry on GitLab's limit of about 30 automation saves a minute per user:
+  wait 65 seconds and retry the same project, up to 3 times, instead of
+  moving on. Before, in groups with more than about 30 projects, some
+  projects silently got no automation until the skill was run again.
+- Add `scripts/automations.sh` (optional, needs jq): does steps 3b and 3c in
+  one run (readiness wait, duplicate check, create with the retry, summary)
+  instead of the agent making hundreds of calls one project at a time.
+  Without jq, the manual steps stay as they were, plus the retry rule.
+- Code Review consent: detect Duo Enterprise with `addOnPurchases` instead of
+  asking, and always send `create_code_review_flow_consent` with a flow list
+  that includes Code Review (GitLab ignores it without Duo Enterprise). If
+  Code Review was already on in a Duo Enterprise group, offer to record the
+  consent, since it can't be read.
+- Runners: read `ip_restriction_ranges` and `shared_runners_setting` on
+  GitLab.com and explain when hosted runners can't run flows; say that a
+  registered runner isn't proof; treat a first session stuck in `created` as
+  a runner problem.
+
+**How this was tested.** These checks were run by Claude (an AI agent), not
+yet repeated by a person end to end:
+- `scripts/automations.sh` as a dry run on a top-level Ultimate group with
+  Duo Enterprise (19 projects): 15 already had the automation, 3 empty
+  projects were skipped, 1 would be created. shellcheck passes. The `--apply`
+  path and the retry haven't run yet.
+- The `addOnPurchases` read on that group returned `DUO_ENTERPRISE`.
+- Earlier, with a separate script that sends the same requests, on the same
+  top-level group: `duo_foundational_flows_availability` and a merged flow
+  list (3 flows kept, Code Review and Fix CI/CD Pipeline added) with
+  `create_code_review_flow_consent`, then automations in 18 projects. That run
+  hit the "too many times" error. Afterwards, Code Review flow sessions
+  reviewed new MRs and Fix CI/CD Pipeline started on failed pipelines.
+
 ## 0.5.1 (2026-11-17)
 
 From testing 0.5.0 on a fresh Ultimate subgroup with 22 projects.
