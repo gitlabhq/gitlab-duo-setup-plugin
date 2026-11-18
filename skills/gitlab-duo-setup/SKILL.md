@@ -3,7 +3,7 @@ name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.2"
+  version: "0.5.3"
 ---
 
 # gitlab-duo-setup
@@ -300,7 +300,13 @@ In project mode, pass `--project "$PROJECT"` instead of `--group`. The last
 line is `RESULT {...}` with `created`, `existing`, `inactive`, `pending`,
 `failed` and `no_runner`: use it for the summary. Exit code `3` means some
 projects are still pending or failed; running it again picks them up without
-duplicates. Without `jq`, do 3b and 3c as written below.
+duplicates. Right after 3a, GitLab may not have set the flow up for the group
+yet; the script then waits for each project instead of stopping. If projects
+are still pending when it ends, don't send the 3a request again: each repeat
+queues another background job, and on a busy day an older one can finish last
+and change the flow list back. Tell the user set-up is still running and to
+run the script (or the skill) again later. Without `jq`, do 3b and 3c as
+written below.
 
 For each project from 1d, run the readiness check in `references/graphql.md`
 ("Check a project is ready"). A project is ready when it has a Fix CI/CD

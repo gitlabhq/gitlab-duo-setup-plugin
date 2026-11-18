@@ -63,11 +63,26 @@ else
   GROUP_ID=$(api "groups/$(enc "$GROUP")?with_projects=false" | jq -r '.id')
 fi
 
-# ---------- the Fix CI/CD Pipeline catalog item, from the group's flows ----------
+# ---------- the Fix CI/CD Pipeline catalog item ----------
+# From the group's flows if GitLab has set the flow up there. Right after step 3a it usually hasn't:
+# GitLab does that in background jobs, which can take minutes or, on a busy day, hours. Then take the
+# item from the catalog and let the per-project wait below decide when each project is ready.
 ITEM=$(gql 'query($g: GroupID!){ aiCatalogConfiguredItems(groupId:$g, includeFoundationalConsumers:true, first:100){ nodes { enabled item { id foundationalFlowReference } } } }' \
   "$(jq -n --arg g "gid://gitlab/Group/$GROUP_ID" '{g:$g}')" |
   jq -r '[.aiCatalogConfiguredItems.nodes[] | select(.enabled and .item.foundationalFlowReference == "fix_pipeline/v1") | .item.id][0] // empty')
-[[ -n $ITEM ]] || { echo "Fix CI/CD Pipeline isn't on for $GROUP. Turn it on for the group first (SKILL.md step 3a)." >&2; exit 2; }
+if [[ -z $ITEM ]]; then
+  CURSOR=null
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    page=$(gql 'query($a: String){ aiCatalogCustomAndFoundationalItems(itemTypes:[FLOW], first:100, after:$a){ pageInfo { hasNextPage endCursor } nodes { ... on AiCatalogFlow { id foundationalFlowReference } } } }' \
+      "$(jq -n --argjson a "$CURSOR" '{a:$a}')") || break
+    ITEM=$(jq -r '[.aiCatalogCustomAndFoundationalItems.nodes[] | select(.foundationalFlowReference == "fix_pipeline/v1") | .id][0] // empty' <<<"$page")
+    [[ -n $ITEM || $(jq -r '.aiCatalogCustomAndFoundationalItems.pageInfo.hasNextPage' <<<"$page") != true ]] && break
+    CURSOR=$(jq '.aiCatalogCustomAndFoundationalItems.pageInfo.endCursor' <<<"$page")
+  done
+  [[ -n $ITEM ]] || { echo "Can't find the Fix CI/CD Pipeline flow in the AI Catalog on $HOST." >&2; exit 2; }
+  echo "GitLab hasn't set up Fix CI/CD Pipeline for $GROUP yet. That runs in the background after step 3a."
+  echo "Don't send the step 3a request again: waiting for each project instead."
+fi
 
 READY_Q='query($p: ID!, $i: AiCatalogItemID!){ project(fullPath:$p){
   duoWorkflowRunnerAvailable

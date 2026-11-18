@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.3 (2026-11-18)
+
+**Fixes**
+- `scripts/automations.sh` no longer stops on a new group. It looked up the
+  Fix CI/CD Pipeline entry at group level before waiting, and right after
+  step 3a GitLab hasn't created that entry yet (it does so in background
+  jobs). So on a fresh group it exited at once with "Turn it on for the group
+  first", and agents then sent the 3a request again. It now takes the flow
+  from the AI Catalog when the group doesn't list it yet, says set-up is
+  still running, and waits for each project as before.
+- SKILL.md 3b: if projects are still pending, don't send the 3a request
+  again. Each repeat queues another background job, and on a busy day an
+  older one can finish last and change the flow list back.
+
+**How this was tested.** By Claude (an AI agent) on GitLab.com, 2026-11-18:
+- Seen in four of five harnesses on five new Ultimate trial groups: the
+  v0.5.2 script exited at once after 3a; three of the sessions then re-sent
+  the 3a request.
+- The new catalog lookup returns the Fix CI/CD Pipeline item
+  (`gid://gitlab/Ai::Catalog::Item/1800`) on the first page.
+- shellcheck: no warnings (the same `SC2016` notes as before).
+- Not run yet: the changed script end to end on a new group.
+
 ## 0.5.2 (2026-11-17)
 
 **Fixes**
