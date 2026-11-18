@@ -125,6 +125,23 @@ GitLab marks the automation mutation and the security profile mutations as
 Experiment, so they can change between releases. If one fails, the skill
 quotes the error and gives you the link to do it by hand.
 
+## Follow up on merge requests
+
+`skills/gitlab-mr-followup/` is a second skill, for after setup. It has your
+agent wait for the pipeline and GitLab Duo Code Review after a push, read what
+they found, fix it, answer the review threads, and check the result on the
+latest commit. It works over the GitLab MCP server or `glab`. It never
+approves a merge request, and it sets auto-merge only when you ask.
+
+Install it the same way as the setup skill, from `skills/gitlab-mr-followup/`.
+`references/harnesses.md` in that folder has the paths, how to call the skill
+in each harness, and an `AGENTS.md` pointer that helps agents reach for it.
+
+It was run once in each of Claude Code, Codex, Cursor, Devin and OpenCode on
+four kinds of merge request: review feedback, a failed pipeline, a merge
+conflict, and one taken through to merge behind an approval rule. Its
+`CHANGELOG.md` says what that showed and what changed afterwards.
+
 ## Layout
 
 ```
@@ -133,4 +150,9 @@ skills/gitlab-duo-setup/
   references/harnesses.md   MCP config and sign-in per harness
   references/graphql.md     queries and mutations for flows, runners and automations
   references/security.md    optional security step (Ultimate)
+
+skills/gitlab-mr-followup/
+  SKILL.md                  the skill
+  references/harnesses.md   install paths, how to call it, AGENTS.md pointer
+  CHANGELOG.md              versions and what was tested
 ```
