@@ -1,9 +1,9 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
+description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.4"
+  version: "0.5.5"
 ---
 
 # gitlab-duo-setup
@@ -12,8 +12,9 @@ One skill, run from your coding agent, sets up GitLab for agentic engineering.
 
 **The core setup** (every run):
 
-1. Turns on Code Review and Fix CI/CD Pipeline for the top-level group, so
-   every merge request gets reviewed and every failed pipeline gets a fix,
+1. Turns on Code Review, Fix CI/CD Pipeline and Developer for the top-level
+   group, so every merge request gets reviewed, every failed pipeline gets a
+   fix, and the agent can hand an issue or a merge conflict to Developer,
    whichever agent or tool the change came from.
 2. Creates the automation that lets Fix CI/CD Pipeline run on its own, in
    every project of the group.
@@ -176,14 +177,10 @@ and what it costs.
 | Code Review flow | Group | Adds `code_review/v1` to the group's flows | Credits per review |
 | Automatic reviews | Group, cascades to projects | Duo reviews every new, non-draft MR | Credits per review |
 | Fix CI/CD Pipeline flow | Group | Adds `fix_pipeline/v1` to the group's flows | None by itself |
+| Developer flow | Group | Adds `developer/v1` to the group's flows. Runs only when someone starts it: assigns it an issue, mentions it, or asks the agent to hand off an issue or a merge conflict | Credits per session |
 | Fix CI/CD Pipeline automation | Every project with CI (N projects) | Each failed pipeline starts a session that can push a fix or open an MR | Credits per failed pipeline |
 
 If a setting is already on, say so and leave it out of the plan.
-
-Ask about this only if it applies:
-
-- **Developer flow** (`developer/v1`): only if the user asks for it. Assign an
-  issue to Duo and it opens an MR.
 
 For each setting the user can't change, list it as "ask a group Owner" (or
 Maintainer) with the link, and leave it out of the requests.
@@ -205,7 +202,7 @@ glab api -X PUT "groups/$GROUP_ID" -H "Content-Type: application/json" --input -
 {
   "duo_remote_flows_availability": true,
   "duo_foundational_flows_availability": true,
-  "enabled_foundational_flows": ["<CURRENT_FLOWS...>", "code_review/v1", "fix_pipeline/v1"],
+  "enabled_foundational_flows": ["<CURRENT_FLOWS...>", "code_review/v1", "fix_pipeline/v1", "developer/v1"],
   "auto_duo_code_review_enabled": true,
   "ai_settings_attributes": {
     "duo_agent_platform_enabled": true,
@@ -419,8 +416,8 @@ trust it over the API fields from Step 1.
 
 - A successful call confirms sign-in and that Duo Agent Platform is available
   to the user.
-- Check that **Code Review** and **Fix CI/CD Pipeline** are listed, and
-  whether `can_start_session` is true.
+- Check that **Code Review**, **Fix CI/CD Pipeline** and **Developer** are
+  listed, and whether `can_start_session` is true.
 - If one is missing, give the Group Duo configuration link.
 
 In OpenCode, `opencode mcp list` can show no servers, or "pending", for the
@@ -550,6 +547,9 @@ flow actually run, not only read results:
 
 - **Code Review**: open a small, non-draft MR in this project. Duo reviews it
   automatically. Or, on an open MR, assign `GitLabDuo` as a reviewer.
+- **Developer**: ask the agent to hand an issue to the Developer flow. It
+  starts a session with `start_duo_session`, flow `developer/v1`, and the
+  issue as the goal, and the flow opens a merge request.
 - **Fix CI/CD Pipeline**: the next failed pipeline starts it. To try it now on
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
