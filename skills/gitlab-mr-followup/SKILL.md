@@ -60,7 +60,7 @@ Work in the local checkout of the source branch. Run the project's tests locally
 
 - **Review threads:** judge each finding on its merits; Duo can be wrong. Fix the real ones. For the ones you do not act on, say why in the thread.
 - **Failed pipeline:** if Fix CI/CD Pipeline left a suggestion, read it, decide whether it is right, then apply it or make the change yourself. If it opened a separate merge request, tell the user and do not copy it blindly. If no flow ran and the cause is small and inside this change, fix it. Otherwise offer to start the flow, with the failed pipeline's URL as the goal.
-- **Merge conflict:** fetch the target branch, bring it into the source branch the way the project does it (merge unless the project rebases), and resolve by keeping what both sides intended. Run the tests, then push. Do not force-push unless the project's workflow requires it and the user agreed.
+- **Merge conflict:** fetch the target branch, bring it into the source branch the way the project does it (merge unless the project rebases), and resolve by keeping what both sides intended. Run the tests, then push. Do not force-push unless the project's workflow requires it and the user agreed. If there is no local checkout, or the user would rather GitLab did it, offer to start the Developer flow with the merge request as the goal. When the session finishes, check that the conflict is gone and the pipeline passed.
 - **Security findings on the merge request:** fix what this change introduced. Findings on the default branch are handled by GitLab's security flows after merge; mention them, do not try to close them here.
 
 ## 4. Answer and resolve
@@ -115,7 +115,7 @@ Used: MCP for ..., glab for ...
 | Reply in a thread, resolve | `save_note` | `glab mr note create --reply`, `glab mr note resolve` |
 | Apply a suggestion | `apply_suggestion` | `glab api --method PUT suggestions/<id>/apply` |
 | Commit without a local checkout | `add_commit` | not needed: use git |
-| Resolve a conflict | no tool, and `add_commit` cannot create a merge commit: do it in the local checkout | local git |
+| Resolve a conflict | no direct tool, and `add_commit` cannot create a merge commit: do it in the local checkout, or start the Developer flow (ask first) | local git |
 | Set auto-merge | `accept_merge_request` with a `strategy` | `glab mr merge <iid> --auto-merge --yes` |
 
 Tool names change between GitLab releases. Use what the server actually lists. If a tool is missing, use glab for that step and say so, unless the user told you not to use glab: then stop and say which step is missing.
