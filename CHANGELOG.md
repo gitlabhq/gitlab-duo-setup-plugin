@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.5 (2026-11-18)
+
+**Changed**
+- The core setup now turns on the Developer flow (`developer/v1`) with Code
+  Review and Fix CI/CD Pipeline, as one more line in the plan. Before, it was
+  added only if the user asked. The blog's first workflow (hand an issue to
+  the Developer flow) and the merge conflict path in `gitlab-mr-followup`
+  both start it, and on a new group only Code Review is on by default, so
+  those steps failed with "flow not enabled".
+- Developer has no automation that runs on its own: it starts only when
+  someone assigns it an issue, mentions it, or asks the agent to start it.
+  The plan line says so, with its cost (credits per session).
+- 4d checks that Developer is listed; Step 7 offers a prompt to try it.
+
+**Not tested yet:** the group request with `developer/v1` added, on a new
+group. Same request and rules as the other flows.
+
 ## 0.5.4 (2026-11-18)
 
 **Removed**

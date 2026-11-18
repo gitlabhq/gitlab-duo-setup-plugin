@@ -4,9 +4,10 @@ An Agent Skill for Claude Code, Codex, Cursor, Devin and OpenCode users. Load
 it, ask your agent to "set up GitLab Duo", and it sets up GitLab for
 agentic engineering:
 
-1. **Turns on Code Review and Fix CI/CD Pipeline for your group.** Every new
-   merge request gets a Duo review, and every failed pipeline gets a fix,
-   whichever agent or tool the change came from.
+1. **Turns on Code Review, Fix CI/CD Pipeline and Developer for your group.**
+   Every new merge request gets a Duo review, and every failed pipeline gets a
+   fix, whichever agent or tool the change came from. Your agent can hand an
+   issue or a merge conflict to the Developer flow.
 2. **Creates the automation that runs Fix CI/CD Pipeline on failed
    pipelines**, in every project of the group.
 3. **Connects your agent to the GitLab MCP server**
