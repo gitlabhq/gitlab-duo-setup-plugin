@@ -3,10 +3,10 @@
 ## 0.5.4 (2026-11-18)
 
 **Removed**
-- Duo Enterprise handling: the `addOnPurchases` read, the Code Review consent
+- AddOn handling: the `addOnPurchases` read, the Code Review consent
   plan line, and `create_code_review_flow_consent` in the group request. The
-  skill is for Duo Agent Platform users, and groups on the Duo Enterprise
-  add-on can't use the other flows it sets up. Nothing else in the setup
+  skill is for Duo Agent Platform users, and groups on unsupported
+  add-ons can't use the other flows it sets up. Nothing else in the setup
   changes.
 
 ## 0.5.3 (2026-11-18)
@@ -43,11 +43,6 @@
   one run (readiness wait, duplicate check, create with the retry, summary)
   instead of the agent making hundreds of calls one project at a time.
   Without jq, the manual steps stay as they were, plus the retry rule.
-- Code Review consent: detect Duo Enterprise with `addOnPurchases` instead of
-  asking, and always send `create_code_review_flow_consent` with a flow list
-  that includes Code Review (GitLab ignores it without Duo Enterprise). If
-  Code Review was already on in a Duo Enterprise group, offer to record the
-  consent, since it can't be read.
 - Runners: read `ip_restriction_ranges` and `shared_runners_setting` on
   GitLab.com and explain when hosted runners can't run flows; say that a
   registered runner isn't proof; treat a first session stuck in `created` as
@@ -56,7 +51,7 @@
 **How this was tested.** These checks were run by Claude (an AI agent), not
 yet repeated by a person end to end:
 - `scripts/automations.sh` as a dry run on a top-level Ultimate group with
-  Duo Enterprise (19 projects): 15 already had the automation, 3 empty
+  unsupported addons (19 projects): 15 already had the automation, 3 empty
   projects were skipped, 1 would be created. shellcheck passes. The `--apply`
   path and the retry haven't run yet.
 - The `addOnPurchases` read on that group returned `DUO_ENTERPRISE`.
@@ -120,8 +115,6 @@ automation in 21 projects without `userId`, with no duplicates on a rerun.
   automation, so this step is always needed.
 - Send all group changes in one request, because GitLab rate-limits changes
   that cascade to every project.
-- Offer Code Review flow consent for groups with the Duo Enterprise add-on.
-  Without it, those users keep getting the classic review.
 
 **Fixes**
 - Group flow execution is now written with `duo_remote_flows_availability`.
