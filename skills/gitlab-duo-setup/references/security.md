@@ -11,8 +11,8 @@ mutations are marked **Experiment** by GitLab.
 
 | Flow | Reference | Maturity | What it does |
 |---|---|---|---|
-| SAST False Positive Detection | `sast_fp_detection/v1` | GA | Scores High and Critical SAST findings and explains each one |
-| Secret Detection False Positive Detection | `secrets_fp_detection/v1` | GA | The same for secret detection findings, where secret detection runs |
+| SAST False Positive Detection | `sast_fp_detection/v1` | GA | Scores SAST findings (Medium and above with the Standard profile) and explains each one |
+| Secret Detection False Positive Detection | `secrets_fp_detection/v1` | GA | The same for secret detection findings |
 | Resolve SAST Vulnerability | `resolve_sast_vulnerability/v1` | GA | Opens a merge request that fixes a finding triage didn't flag as a false positive |
 
 These flows work on findings from scans on the default branch (and other
@@ -20,7 +20,9 @@ tracked branches), not inside a merge request. Say so plainly: the outcome is
 less security debt once code lands, not a gate on the merge request.
 
 Without a scanner the flows have nothing to work on, which is why the SAST
-profile goes on first.
+and secret detection profiles go on first: SAST feeds SAST False Positive
+Detection and Resolve SAST Vulnerability, and secret detection feeds Secret
+Detection False Positive Detection.
 
 ## 1. Add the flows to the group
 
@@ -100,18 +102,28 @@ query($group: ID!) {
 }'
 ```
 
+Three profiles are needed from this read:
+
+- The default SAST profile (`scanType: SAST`, `gitlabRecommended: true`).
+- The default secret detection profile (`scanType: SECRET_DETECTION`,
+  `gitlabRecommended: true`).
+- The triage and remediation profile named
+  `Triage and Remediation (Standard)`.
+
 Default profiles that haven't been used yet have IDs built from their key:
 
 - `gid://gitlab/Security::ScanProfile/sast`
-- `gid://gitlab/Security::ScanProfile/triage_and_remediation_conservative`
+- `gid://gitlab/Security::ScanProfile/triage_and_remediation_standard`
   (also `_standard` and `_proactive`)
 
 Take the IDs from this read rather than typing them; the names and keys can
-change.
+change. That goes for the secret detection profile too: pick it by its
+`scanType`, not by a guessed ID.
 
-## 3. Apply the SAST profile, then the triage and remediation profile
+## 3. Apply the SAST and secret detection profiles, then the triage and remediation profile
 
-One mutation per profile. Passing the group applies the profile to every
+One mutation per profile, three in all, in this order: SAST, secret
+detection, triage and remediation. Passing the group applies the profile to every
 project in the group and its subgroups, in the background.
 
 ```bash
@@ -129,6 +141,13 @@ mutation($profile: SecurityScanProfileID!, $group: GroupID!) {
 
 - **SAST profile**: `mode: FILL_SCAN_GAPS`. It turns on SAST only in projects
   that don't scan yet, and skips the rest. No `.gitlab-ci.yml` edits.
+  - **Secret detection profile:** `mode: FILL_SCAN_GAPS`. It turns on secret
+  detection only in projects that have no pipeline secret detection yet, and
+  skips the rest. No `.gitlab-ci.yml` edits. Only pipeline scans count as
+  coverage here, so a project that has secret push protection but no
+  pipeline scan still gets the profile. Tell the user before applying it:
+  the default profile also turns on secret push protection, which blocks
+  pushes that contain a secret, in the projects it's applied to.
 - **Triage and remediation profile**: `mode: FILL_PROFILE_GAPS`, so projects
   that already have one keep it. `FILL_SCAN_GAPS` doesn't work for this
   profile.
@@ -137,16 +156,18 @@ Presets for the triage and remediation profile:
 
 | Preset | False positive detection | Vulnerability resolution |
 |---|---|---|
-| Conservative (recommended) | High and above, on demand | High and above, on demand, at most 5 open fix MRs per project |
-| Standard | Medium and above, automatic | Medium and above, automatic, at most 15 open fix MRs |
+| Conservative | High and above, on demand | High and above, on demand, at most 5 open fix MRs per project |
+| Standard (Default) | Medium and above, automatic | Medium and above, automatic, at most 15 open fix MRs |
 | Proactive | Everything, automatic | Everything, automatic, no MR limit |
 
-Recommend Conservative so the team sees results and cost before going
-automatic. Offer Standard if the user wants it to run after every scan.
-Credits scale with the number of findings; say so.
+Apply Standard. Before applying it, tell the user what it means: the flows
+run automatically after every scan on findings of Medium severity and above,
+and credits scale with the number of findings. Offer Conservative instead if
+the user wants to see results and cost before going automatic; it runs only
+on demand, on High and above.
 
 Errors for individual projects aren't returned when you pass a group. After
-a minute, read the profiles again and report `projectCount` for each. To
+a minute, read the profiles again and report `projectCount` for each of the three. To
 undo, use `securityScanProfileDetach` with the same IDs.
 
 ## Security Review (beta), only if the user asks
@@ -172,6 +193,7 @@ If the user asks for it:
 ## Docs
 
 - SAST false positive detection: https://docs.gitlab.com/user/application_security/vulnerabilities/false_positive_detection/
+- Secret detection false positive detection: https://docs.gitlab.com/user/application_security/vulnerabilities/secret_false_positive_detection/
 - Agentic SAST vulnerability resolution: https://docs.gitlab.com/user/application_security/vulnerabilities/agentic_vulnerability_resolution/
 - Security configuration profiles: https://docs.gitlab.com/user/application_security/configuration/security_configuration_profiles/
 - Security Review: https://docs.gitlab.com/user/application_security/security_review/

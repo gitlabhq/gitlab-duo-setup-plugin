@@ -1,6 +1,6 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
+description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
   version: "0.5.1"
@@ -421,10 +421,14 @@ mentioning it:
 Ask one question:
 
 > Your group is on Ultimate. Do you also want GitLab to triage and fix
-> security findings? It turns on SAST where projects don't scan yet, then
-> scores High and Critical findings for false positives and can open fix
-> merge requests. It works on findings once code lands on the default
-> branch, not inside the merge request. Yes or no?
+> security findings? It turns on SAST and secret detection where projects
+> don't scan yet, which also turns on secret push protection (pushes that
+> contain a secret are blocked) in those projects. Then, after every scan,
+> it scores findings of Medium severity and above for false positives and
+> opens fix merge requests for SAST findings, at most 15 open per project.
+> This runs automatically and uses credits in line with the number of
+> findings. It works on findings once code lands on the default branch,
+> not inside the merge request. Yes or no?
 
 On no, go to Step 7. On yes, follow `references/security.md`. In short:
 
@@ -435,13 +439,16 @@ On no, go to Step 7. On yes, follow `references/security.md`. In short:
    changes).
 2. Apply the SAST profile to the group, only to projects that don't scan yet
    (`FILL_SCAN_GAPS`). No `.gitlab-ci.yml` edits.
-3. Apply the automated triage and remediation profile to the group, only to
-   projects without one (`FILL_PROFILE_GAPS`). Recommend the Conservative
-   preset: triage and fixes run on demand, for High and above, with at most
-   five open fix merge requests per project. Offer Standard if the user wants
-   it to run automatically after every scan.
-
-4. Offer the opt-in `code_security` MCP toolset, so the agent can list
+3. Apply the secret detection profile to the group, only to projects with no
+   pipeline secret detection yet (`FILL_SCAN_GAPS`). No `.gitlab-ci.yml`
+   edits. It also turns on secret push protection in those projects.
+4. Apply the automated triage and remediation profile to the group, only to
+   projects without one (`FILL_PROFILE_GAPS`). Use the Standard preset:
+   triage and fixes run automatically after every scan, for Medium and
+   above, with at most 15 open fix merge requests per project. Offer
+   Conservative if the user wants to see results and cost first: on demand,
+   High and above, at most five open fix merge requests per project.
+5. Offer the opt-in `code_security` MCP toolset, so the agent can list
    findings and read their verdicts over MCP (`list_vulnerabilities`,
    `get_vulnerability`) instead of falling back to `glab`. It means adding
    the toolsets header with the defaults plus `code_security` (Step 4,
@@ -504,9 +511,11 @@ flow actually run, not only read results:
 - **Fix CI/CD Pipeline**: the next failed pipeline starts it. To try it now on
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
-- **Security triage and remediation** (if on): after the next SAST scan on the
-  default branch, pick a High or Critical SAST finding. To run the fix from
-  the agent, find it with the vulnerabilities read in `references/security.md`
+- **Security triage and remediation** (if on): after the next scan on the
+  default branch, triage and fix merge requests start on their own for
+  findings of Medium severity and above (on demand only, if the user chose
+  Conservative). To run a fix now from the agent, pick a SAST finding
+  with the vulnerabilities read in `references/security.md`
   and start a session with `start_duo_session`, the project's Resolve SAST
   Vulnerability `ai_catalog_item_consumer_id` from `list_duo_agents_and_flows`,
   and the vulnerability's numeric ID as the goal. That's the same request as
