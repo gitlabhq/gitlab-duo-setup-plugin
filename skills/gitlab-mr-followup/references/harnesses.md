@@ -10,13 +10,11 @@ Copy the `gitlab-mr-followup/` folder into the agent's skills directory. One ski
 | Devin | `~/.config/devin/skills/` | `.devin/skills/` | `@skills:gitlab-mr-followup` |
 | OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` | `@gitlab-mr-followup` |
 
-Notes from running this skill once in each of these agents:
+Notes:
 
 - Codex needs a restart to see a newly installed skill. The others usually pick it up in the running session.
 - Devin and OpenCode also read `~/.claude/skills/` and `~/.agents/skills/`. If you use several agents, install in one shared place so the skill is not listed twice.
-- Cursor CLI 2026.11.17 loads the skill from either project folder. Version 2026.01.28 did not offer project skills in interactive sessions, so update first.
-- Claude Code, Codex, Cursor and Devin loaded the skill for a plain request such as "does this merge request have feedback?". OpenCode used it only when the request named it. If your team uses OpenCode, add the `AGENTS.md` pointer below.
-- Confirm the agent lists the skill before relying on it.
+- Confirm the agent lists the skill before relying on it. If it doesn't reach for the skill by itself, add the `AGENTS.md` pointer below.
 
 ## Connect GitLab
 
