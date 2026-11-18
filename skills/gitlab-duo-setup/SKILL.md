@@ -177,11 +177,7 @@ and what it costs.
 | Fix CI/CD Pipeline flow | Group | Adds `fix_pipeline/v1` to the group's flows | None by itself |
 | Fix CI/CD Pipeline automation | Every project with CI (N projects) | Each failed pipeline starts a session that can push a fix or open an MR | Credits per failed pipeline |
 
-Leave out any line that's already on, and say which ones in a sentence above
-the plan, so the user can see nothing changes for them. Five new groups on an
-Ultimate trial, tested in November 2026, all started with the Code Review flow
-and automatic reviews on, so the plan there was only the Fix CI/CD Pipeline
-lines and MCP.
+If a setting is already on, say so and leave it out of the plan.
 
 Ask about these only if they apply:
 
@@ -262,13 +258,6 @@ If the project still has fewer flows, stop and tell the user which flows are
 off and in which projects, and give them the Group Duo configuration link to
 turn them back on. 4d confirms which flows can actually start.
 
-GitLab can also answer `200` with no message and still not turn a flow on. If
-a flow you sent is missing from `groupFlows` and from the project's list about
-a minute later, don't send the request again in another shape (a form body,
-the list alone, with the availability fields added): in testing that made no
-difference. Tell the user which flow GitLab did not turn on, give the Group
-Duo configuration link, and go on with the rest of the plan.
-
 ### 3b. Wait for the group change to reach the projects
 
 GitLab turns the flows on in each project in background jobs: it creates each
@@ -281,22 +270,9 @@ For each project from 1d, run the readiness check in `references/graphql.md`
 ("Check a project is ready"). A project is ready when it has a Fix CI/CD
 Pipeline entry and an active service account. Check every 30 seconds for up
 to 10 minutes, then move on. Projects still not ready go on a "re-run later"
-list; running the skill again picks them up without creating duplicates.
-
-Don't wait the full 10 minutes when nothing is happening. If no project is
-ready after 2 minutes, list the group's service accounts:
-
-```bash
-glab api "groups/$GROUP_ID/service_accounts"
-```
-
-GitLab creates one for each flow it sets up, named after the flow and the
-group (for example `duo-code-review-<group>`). If there's none whose name
-starts with `duo-fix-ci-cd-pipeline`, GitLab accepted the request but didn't
-set the flow up, and waiting won't change that: on five new trial groups it
-still hadn't appeared an hour later. Tell the user in those words, say that no
-automation can be created until the flow is set up, give the Group Duo
-configuration link, skip 3c for these projects and go on to Step 4.
+list; running the skill again picks them up without creating duplicates. Tell
+the user which projects are on that list and that their automation wasn't
+created yet.
 
 ### 3c. Fix CI/CD Pipeline automation in every project
 
@@ -393,11 +369,9 @@ example) don't hand the turn back to you after sign-in.
 - **Cursor (IDE)**: Settings > Cursor Settings > Tools & MCP > GitLab > Connect
   (or the "Needs login" link), and approve in the browser.
 - **Cursor (CLI)**: ask the user to run `cursor-agent mcp enable GitLab`, then
-  `cursor-agent mcp login GitLab`, inside the project folder, and approve in
-  the browser. The CLI won't sign in to a server that isn't approved, and it
-  keeps the approval and the sign-in per folder, so a new project folder needs
-  both again. Check `cursor-agent mcp list` first: if it shows
-  `GitLab: ready`, there's nothing to do.
+  `cursor-agent mcp login GitLab`, in the project folder, and approve in the
+  browser. The CLI keeps the approval and the sign-in per folder. If
+  `cursor-agent mcp list` shows `GitLab: ready`, there's nothing to do.
 - **Devin**: `devin mcp add` usually starts the browser sign-in itself. If
   `devin mcp get GitLab` still shows it needs authentication, ask the user to
   run `devin mcp login GitLab` and approve in the browser.
@@ -422,10 +396,9 @@ trust it over the API fields from Step 1.
   whether `can_start_session` is true.
 - If one is missing, give the Group Duo configuration link.
 
-In OpenCode, a missing server can be a false alarm. For its first few seconds
-in a folder it hasn't seen, `opencode mcp list` prints "No MCP servers
-configured", then "pending". Check again after five seconds before you
-conclude the server isn't there.
+In OpenCode, `opencode mcp list` can show no servers, or "pending", for the
+first few seconds in a new folder. Check again before you report the server as
+missing.
 
 If the call fails, check the troubleshooting table in
 `references/harnesses.md`. A 403 can mean MCP client access is off for the
