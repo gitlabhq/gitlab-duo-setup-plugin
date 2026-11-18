@@ -116,13 +116,13 @@ Tested on GitLab.com (Ultimate), in a fresh subgroup with 22 projects, on
 - Running Resolve SAST Vulnerability on one finding from the agent, with the
   MCP tool `start_duo_session`.
 
-Run by Claude (an AI agent) on a top-level Ultimate group with Duo
-Enterprise, not yet repeated by a person (details in the CHANGELOG, 0.5.2):
+Run by Claude (an AI agent) on a top-level Ultimate group, not yet repeated
+by a person (details in the CHANGELOG, 0.5.2):
 
 - The group request on a top-level group with
-  `duo_foundational_flows_availability`, a merged flow list and Code Review
-  flow consent, using a separate script that sends the same requests.
-- `scripts/automations.sh` as a dry run, and the Duo Enterprise read.
+  `duo_foundational_flows_availability` and a merged flow list, using a
+  separate script that sends the same requests.
+- `scripts/automations.sh` as a dry run.
 
 Checked against GitLab's source (19.6) but not yet run against a live group:
 

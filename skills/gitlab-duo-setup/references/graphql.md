@@ -234,17 +234,3 @@ them "too many times. Try again in a minute." Wait 65 seconds and send the
 same request again, up to 3 times; don't skip the project.
 `scripts/automations.sh` does this. Seen on GitLab.com in an automated run
 (by Claude, an AI agent) that created automations for 18 projects in a row.
-
-## Duo Enterprise add-on
-
-Code Review consent (SKILL.md 3a) only matters with Duo Enterprise. Group
-Owners can read the add-ons:
-
-```bash
-glab api graphql -F n="gid://gitlab/Group/$GROUP_ID" -f query='
-query($n: NamespaceID) { addOnPurchases(namespaceId: $n) { name purchasedQuantity } }'
-```
-
-`DUO_ENTERPRISE` in the list means the group has it. Run on GitLab.com on
-2026-11-17 by Claude (an AI agent). If the call fails, send the consent with the flow list anyway:
-GitLab ignores it without Duo Enterprise.
