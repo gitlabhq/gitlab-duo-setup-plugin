@@ -87,17 +87,24 @@ it isn't listed twice.
 
 ## What is not automated yet
 
-No API covers these, so the skill gives you a direct link for each:
+No API covers these steps, so the skill stops and gives you a direct link for
+each so that you can finish the configuration in the GitLab UI:
 
-- The group's MCP client access setting (Allow connection to GitLab). The
-  skill can't read it, but a successful MCP sign-in shows it's on.
-- Runners, for projects with none that can run flows. The skill lists those
-  projects and doesn't turn on hosted runners without asking.
-- The Allow foundational flows toggle on a project that turned it off on its
-  own. The skill lists those projects.
-- Self-Managed: connecting the instance to an AI gateway.
-- Push rules, if a project has them: allowing the `duo-*` service accounts.
-- The OAuth sign-in itself, which happens in your browser.
+- **MCP client access (Allow connection to GitLab):** Group Owner turns this
+  on under group permissions. The skill can't read the setting; a successful
+  MCP sign-in is how you know it's on.
+- **Runners for flow sessions:** Projects with no runner that can run flows
+  need a Maintainer or Owner to add or enable one. The skill lists those
+  projects and does not turn on hosted runners without asking.
+- **Allow foundational flows (project override):** If a project turned this
+  off on its own, a Maintainer or Owner turns it back on. The skill lists
+  those projects.
+- **Self-Managed AI gateway:** An instance admin connects the instance to an
+  AI gateway before Duo Agent Platform can run.
+- **Push rules and `duo-*` service accounts:** If push rules block those
+  accounts, a Maintainer or Owner updates the rules so flows can push.
+- **OAuth sign-in:** You complete sign-in in the browser when the skill opens
+  it; the skill cannot click through that step for you.
 
 ## What has been tested
 
