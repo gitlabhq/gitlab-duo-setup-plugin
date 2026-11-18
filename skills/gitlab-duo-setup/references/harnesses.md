@@ -79,8 +79,16 @@ Merge this entry in. Unlike Claude Code, it has no `type` field:
 }
 ```
 
-**Sign in**: Settings → Cursor Settings → Tools & MCP → GitLab → Connect, and
-approve in the browser.
+**Sign in (IDE)**: Settings → Cursor Settings → Tools & MCP → GitLab → Connect,
+and approve in the browser.
+
+**Sign in (CLI)**: inside the project folder, run `cursor-agent mcp enable
+GitLab`, then `cursor-agent mcp login GitLab`, and approve in the browser.
+`mcp login` fails with "has not been approved" until the server is enabled.
+The CLI keeps the approval and the sign-in per folder, even when the server is
+configured at user level, so each new project folder needs both again. Run
+`cursor-agent mcp list` first and sign in only if it doesn't show
+`GitLab: ready`.
 
 ## Devin
 
@@ -124,7 +132,9 @@ config and keeps other servers.
 - **Project-level**: the same command without `--global`, which writes the
   project's `opencode.json`.
 
-Check first with `opencode mcp list`. The entry lands under `mcp.servers`:
+Check first with `opencode mcp list`. In a folder OpenCode hasn't seen before,
+it can print "No MCP servers configured", then "pending", for a few seconds:
+run it again before you add anything. The entry lands under `mcp.servers`:
 
 ```json
 {
