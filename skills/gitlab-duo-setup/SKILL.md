@@ -3,7 +3,7 @@ name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review and Fix CI/CD Pipeline for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.3"
+  version: "0.5.4"
 ---
 
 # gitlab-duo-setup
@@ -118,10 +118,6 @@ On GitLab.com, also read the plan with `glab api "namespaces/$GROUP_ID"`
 (`plan`). GitLab returns it only to group Owners and admins. Keep it for
 Step 5; don't mention security before then.
 
-In group mode, also read whether the group has Duo Enterprise ("Duo
-Enterprise add-on" in `references/graphql.md`). Step 3a uses it for Code
-Review consent.
-
 ### 1b. Pick the mode
 
 - **Group mode**: the user is Owner of the top-level group. The skill sets up
@@ -184,13 +180,8 @@ and what it costs.
 
 If a setting is already on, say so and leave it out of the plan.
 
-Ask about these only if they apply:
+Ask about this only if it applies:
 
-- **Code Review for Duo Enterprise seats**: only if 1a found the Duo
-  Enterprise add-on. Without consent, those users keep getting the classic,
-  non-agentic review instead of the Code Review flow, and nothing says so.
-  Approving Code Review in this plan gives the consent (3a); say so on the
-  Code Review line.
 - **Developer flow** (`developer/v1`): only if the user asks for it. Assign an
   issue to Duo and it opens an MR.
 
@@ -243,19 +234,6 @@ Build the body from the approved plan only:
   two fields turn the setting on and also let subgroups and projects change
   it, so don't send them when the setting is already on.
 - Include `ai_settings_attributes` keys only for the fields that are off.
-- Whenever the body has `enabled_foundational_flows` with `code_review/v1` in
-  it, add `"create_code_review_flow_consent": true`. GitLab reads the consent
-  only in a request that also sends `enabled_foundational_flows`, and ignores
-  it for groups without Duo Enterprise
-  (`ee/app/services/ee/groups/update_service.rb`,
-  `handle_code_review_flow_consent_update`), so there's nothing to guess.
-- If the group has Duo Enterprise and Code Review is already in
-  `CURRENT_FLOWS`, the rules above leave the flow list out, so consent is
-  never recorded. It can't be read over the API, and it may never have been
-  given. Offer it as its own plan line; on a yes, send
-  `enabled_foundational_flows` as `CURRENT_FLOWS` unchanged plus the consent.
-  The flow-list rules still apply: top-level group only, full list, shown
-  before sending.
 - Add `"duo_features_enabled": true` only if the group reports it `false`.
   The API documents it for Self-Managed; on GitLab.com, if it's off, give the
   Group Duo overview link instead.

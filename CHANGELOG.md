@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.4 (2026-11-18)
+
+**Removed**
+- Duo Enterprise handling: the `addOnPurchases` read, the Code Review consent
+  plan line, and `create_code_review_flow_consent` in the group request. The
+  skill is for Duo Agent Platform users, and groups on the Duo Enterprise
+  add-on can't use the other flows it sets up. Nothing else in the setup
+  changes.
+
 ## 0.5.3 (2026-11-18)
 
 **Fixes**
