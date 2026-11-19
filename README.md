@@ -95,6 +95,77 @@ it isn't listed twice.
 | Devin | `@skills:gitlab-duo-setup` |
 | OpenCode | `@gitlab-duo-setup` |
 
+## Set it up by hand
+
+If you prefer the GitLab UI, follow these steps for the core setup. A top-level
+group Owner handles group settings; a project Maintainer can handle project
+settings. On Self-Managed or Dedicated, ask an instance admin to check the
+instance-level Agent Platform and MCP settings first.
+
+1. Check the [requirements](#requirements), including GitLab Credits and a
+   runner that can run flows in each project. Check project push rules if they
+   might block the `duo-*` service accounts.
+2. On GitLab.com, open the top-level group's **Settings > GitLab Duo > Change
+   configuration** and select **Turn on GitLab Duo Agentic Chat, agents, and
+   flows** under **GitLab Duo Agent Platform**. On Self-Managed or Dedicated,
+   ask an instance admin to enable Agent Platform, then open
+   the group's **Settings > General > GitLab Duo features**. Turn on **Allow
+   flow execution** and **Allow foundational flows**, select **Code Review**,
+   **Fix CI/CD Pipeline**, and **Developer**, then save. Wait for the settings
+   to reach the projects. [Flow settings](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/#turn-foundational-flows-on-or-off).
+3. In the group, open **Settings > General > Merge requests > GitLab Duo Code
+   Review** and select **Enable automatic reviews by GitLab Duo**. Check for
+   project overrides under **Settings > Merge requests**. [Automatic reviews](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#automatic-reviews).
+4. In each project with CI/CD, open **AI > Automations > New automation**.
+   Name it, select **Fix CI/CD Pipeline** under **Runs with**, then add an
+   **On an event** trigger for **Pipeline events > Failed** and create it.
+   On GitLab 19.5 and earlier, look under **Automate > Triggers** instead.
+   [Automation steps](https://docs.gitlab.com/user/duo_agent_platform/automations/#create-an-event-based-automation).
+5. On GitLab.com, in the top-level group's **Settings > General > Permissions
+   and group features**, turn on **Allow connection to GitLab** for MCP clients.
+   On Self-Managed or Dedicated, an instance admin enables MCP access. Add
+   `https://<host>/api/v4/mcp` to your coding agent and complete OAuth sign-in
+   using the [instructions for your harness](skills/gitlab-duo-setup/references/harnesses.md).
+6. Open a non-draft merge request and confirm Duo reviews it. Check that the
+   next failed pipeline starts a Fix CI/CD Pipeline session under **AI >
+   Sessions**. [Run a flow](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/).
+
+Optional on Ultimate: turn on **SAST False Positive Detection**, **Secret
+Detection False Positive Detection**, and **Resolve SAST Vulnerability** in
+the group, then apply the default SAST and secret detection profiles and an
+automated triage profile from **Secure > Security inventory**. Review the
+profile's included actions and credit use before applying it. The default
+secret detection profile also blocks pushes containing secrets. Before
+applying scan profiles, check the project's CI rules: without `workflow:rules`,
+a separate MR scan pipeline can appear green while tests fail in a branch
+pipeline. Make tests and scans run in the intended pipeline.
+[Security profiles](https://docs.gitlab.com/user/application_security/configuration/security_configuration_profiles/#apply-profiles-in-the-ui)
+and [pipeline rules](https://docs.gitlab.com/ci/yaml/workflow/#switch-between-branch-pipelines-and-merge-request-pipelines).
+
+## After setup
+
+The setup skill does not set the review-on-push preference or create these
+instruction and exclusion files:
+
+- **Review on push:** `Start a new review on push` is on by default. When
+  automatic reviews are on, a push that changes the diff starts a follow-up
+  review for an open, non-draft MR if Duo is already a reviewer and the author
+  uses Code Review Flow. Change it under **Settings > Merge requests > GitLab
+  Duo Code Review**. [Details](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#start-a-new-review-on-push).
+- **Review instructions:** Add `.gitlab/duo/mr-review-instructions.yaml` to
+  guide Code Review Flow on project-specific standards. [Format](https://docs.gitlab.com/user/duo_agent_platform/customize/review_instructions/#configure-custom-review-instructions-for-a-project).
+- **Automatic review exclusions:** Add
+  `.gitlab/duo/mr-review-automated-rules.yaml` to the default branch to skip
+  automatic reviews by source branch, target branch or author. Manual reviews
+  still work. [Rules](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#exclude-merge-requests-for-a-project).
+- **Agent instructions:** Developer and Fix CI/CD Pipeline read
+  [`AGENTS.md`](https://docs.gitlab.com/user/duo_agent_platform/customize/agents_md/);
+  [Code Review Flow does not](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#custom-code-review-instructions).
+  Put review guidance in the review instructions file instead.
+- **Pipeline logs:** Fix CI/CD Pipeline processes only the last **150 KiB** of
+  each job log. Keep key errors near the end or reduce verbose output.
+  [Workarounds](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/fix_pipeline/#flow-cannot-identify-the-root-cause-of-a-failure).
+
 ## What is not automated yet
 
 No API covers these steps, so the skill stops and gives you a direct link for

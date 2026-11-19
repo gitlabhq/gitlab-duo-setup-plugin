@@ -474,7 +474,10 @@ Ask one question:
 > opens fix merge requests for SAST findings, at most 15 open per project.
 > This runs automatically and uses credits in line with the number of
 > findings. It works on findings once code lands on the default branch,
-> not inside the merge request. Yes or no?
+> not inside the merge request. Before applying scan profiles, check CI:
+> without `workflow:rules`, a separate MR scan pipeline can appear green
+> while tests fail in a branch pipeline. This skill does not change CI rules.
+> Yes or no?
 
 On no, go to Step 7. On yes, follow `references/security.md`. In short:
 
