@@ -92,6 +92,30 @@ it isn't listed twice.
 | Devin | `@skills:gitlab-duo-setup` |
 | OpenCode | `@gitlab-duo-setup` |
 
+## After setup
+
+The setup skill does not set the review-on-push preference or create these
+instruction and exclusion files:
+
+- **Review on push:** `Start a new review on push` is on by default. When
+  automatic reviews are on, a push that changes the diff starts a follow-up
+  review for an open, non-draft MR if Duo is already a reviewer and the author
+  uses Code Review Flow. Change it under **Settings > Merge requests > GitLab
+  Duo Code Review**. [Details](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#start-a-new-review-on-push).
+- **Review instructions:** Add `.gitlab/duo/mr-review-instructions.yaml` to
+  guide Code Review Flow on project-specific standards. [Format](https://docs.gitlab.com/user/duo_agent_platform/customize/review_instructions/#configure-custom-review-instructions-for-a-project).
+- **Automatic review exclusions:** Add
+  `.gitlab/duo/mr-review-automated-rules.yaml` to the default branch to skip
+  automatic reviews by source branch, target branch or author. Manual reviews
+  still work. [Rules](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#exclude-merge-requests-for-a-project).
+- **Agent instructions:** Developer and Fix CI/CD Pipeline read
+  [`AGENTS.md`](https://docs.gitlab.com/user/duo_agent_platform/customize/agents_md/);
+  [Code Review Flow does not](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#custom-code-review-instructions).
+  Put review guidance in the review instructions file instead.
+- **Pipeline logs:** Fix CI/CD Pipeline processes only the last **150 KiB** of
+  each job log. Keep key errors near the end or reduce verbose output.
+  [Workarounds](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/fix_pipeline/#flow-cannot-identify-the-root-cause-of-a-failure).
+
 ## What is not automated yet
 
 No API covers these steps, so the skill stops and gives you a direct link for
