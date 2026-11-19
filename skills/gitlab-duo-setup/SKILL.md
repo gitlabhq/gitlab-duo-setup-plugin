@@ -3,7 +3,7 @@ name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project; for anyone else it changes no GitLab settings, connects the agent to GitLab and writes a ready-to-send request for the group Owner. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.6"
+  version: "0.5.7"
 ---
 
 # gitlab-duo-setup
@@ -471,7 +471,10 @@ Ask one question:
 > opens fix merge requests for SAST findings, at most 15 open per project.
 > This runs automatically and uses credits in line with the number of
 > findings. It works on findings once code lands on the default branch,
-> not inside the merge request. Yes or no?
+> not inside the merge request. Before applying scan profiles, check CI:
+> without `workflow:rules`, a separate MR scan pipeline can appear green
+> while tests fail in a branch pipeline. This skill does not change CI rules.
+> Yes or no?
 
 On no, go to Step 7. On yes, follow `references/security.md`. In short:
 
