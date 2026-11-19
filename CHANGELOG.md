@@ -7,6 +7,8 @@
   version in its description: `Fix CI/CD Pipeline on failed pipelines
   (gitlab-duo-setup 0.5.7)`. That tells automations the skill created apart
   from ones made by hand, so flow runs can be tied to the skill.
+- When creating the automation fails in a project, the skill gives the link
+  to create it by hand and the description to use, so it carries the tag too.
 - Automations made by earlier versions keep their old description. The skill
   skips projects that already have an active automation, so it doesn't
   rename them.

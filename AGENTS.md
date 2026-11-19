@@ -8,6 +8,7 @@ Cursor, Devin or OpenCode to the GitLab MCP server. See `README.md`.
   Devin and OpenCode.
 - Bump `metadata.version` in `SKILL.md` and add a `CHANGELOG.md` entry when you
   change the skill. Update the version in the Fix CI/CD Pipeline automation
-  description too, in `scripts/automations.sh` and `references/graphql.md`.
+  description too, in `scripts/automations.sh`, `references/graphql.md` and
+  step 3c of `SKILL.md`.
 - Docs are customer-facing: describe what the skill does today, and say plainly
   what is not automated yet.
