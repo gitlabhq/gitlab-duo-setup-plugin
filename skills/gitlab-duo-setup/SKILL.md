@@ -1,9 +1,9 @@
 ---
 name: gitlab-duo-setup
-description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
+description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project; for anyone else it changes no GitLab settings, connects the agent to GitLab and writes a ready-to-send request for the group Owner. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
 metadata:
-  version: "0.5.5"
+  version: "0.5.6"
 ---
 
 # gitlab-duo-setup
@@ -26,6 +26,9 @@ remediation. It runs only after the core setup works, and if it fails, the
 core setup stays as it is.
 
 Anything the skill can't set up, it says so and gives a direct link.
+
+Not a group Owner? The skill still connects your agent, sets up what your role
+allows, and ends with one ready-to-send request for your group Owner.
 
 ## Rules
 
@@ -124,11 +127,21 @@ Step 5; don't mention security before then.
 - **Group mode**: the user is Owner of the top-level group. The skill sets up
   the group and every project in it. This is the recommended path.
 - **Project mode**: the user is Maintainer of this project but not group
-  Owner. The skill sets up this project only, and lists what a group Owner
-  has to do, with links. Suggest they send the Owner this skill.
-- Below Maintainer: read-only. Report the state and who to ask.
+  Owner. The skill sets up this project only, then writes the request for
+  the group Owner (6b) for the group-wide parts.
+- **Member mode**: the user is below Maintainer on this project. The skill
+  changes no GitLab settings, so skip Steps 2, 3 and 5. It still connects
+  this agent to the GitLab MCP server (Step 4), because that sign-in is per
+  user and needs no admin role, and it writes the request for the group
+  Owner (6b).
 
-Tell the user which mode you're in and why.
+Tell the user which mode you're in and why. In project and member mode, say
+up front that the skill ends with a ready-to-send request for the group
+Owner.
+
+In member mode, some reads in 1a and 1c can fail or come back empty, because
+the user can't administer the group or the project. That's expected. Keep
+going, and use what the reads did return for the request in 6b.
 
 ### 1c. Flows, runners and automations
 
@@ -183,7 +196,8 @@ and what it costs.
 If a setting is already on, say so and leave it out of the plan.
 
 For each setting the user can't change, list it as "ask a group Owner" (or
-Maintainer) with the link, and leave it out of the requests.
+Maintainer) with the link, and leave it out of the requests. 6b turns these
+into one request the user can send.
 
 Also list what stays manual (Step 6), so the user sees the whole picture
 before anything changes. Then ask: "Apply this plan?" Wait for a yes. Let the
@@ -340,10 +354,14 @@ The user isn't group Owner, so:
   `auto_duo_code_review_enabled`.
 - If the group already has Fix CI/CD Pipeline, create this project's
   automation (3c).
-- List what the group Owner needs to do: the group request in 3a, with the
-  Group Duo configuration link.
+- Write the request for the group Owner (6b) for the group request in 3a,
+  with the Group Duo configuration link.
 
 ## Step 4: Connect the GitLab MCP server
+
+Run this step in every mode, including member mode. The MCP sign-in is per
+user and needs no admin role. Once connected, the user's agent can read review
+threads, pipelines and issues, and start the flows the group already has on.
 
 The server is `https://<HOST>/api/v4/mcp`, HTTP transport, OAuth in the
 browser. Send no toolsets header. The server's defaults are `core`,
@@ -418,7 +436,8 @@ trust it over the API fields from Step 1.
   to the user.
 - Check that **Code Review**, **Fix CI/CD Pipeline** and **Developer** are
   listed, and whether `can_start_session` is true.
-- If one is missing, give the Group Duo configuration link.
+- If one is missing, give the Group Duo configuration link. In project or
+  member mode, add it to the request in 6b instead.
 
 In OpenCode, `opencode mcp list` can show no servers, or "pending", for the
 first few seconds in a new folder. Check again before you report the server as
@@ -523,6 +542,56 @@ any that apply. Give the link for each:
 - **Self-Managed and Dedicated**: the instance needs Duo connected to an AI
   gateway.
 
+### 6b. Request for the group Owner (project and member mode)
+
+When the user can't make every change themselves, end with one request they
+can send to a group Owner, instead of a list of links. Skip this in group
+mode.
+
+Find the Owners of the top-level group:
+
+```bash
+glab api --paginate "groups/$GROUP/members?per_page=100"
+```
+
+Keep members with `access_level` 50 and `state` `active`, and leave out bots.
+If the read fails or finds no Owner, give the group members link
+(`https://<HOST>/groups/<GROUP>/-/group_members`) and tell the user to send
+the request to an Owner listed there.
+
+Write the request in plain words, short enough to paste into a chat or an
+issue:
+
+- **The ask:** install this skill
+  (https://gitlab.com/gitlab-da/projects/agentic-eng-config) and run it once
+  for the top-level group. It shows the full plan and changes nothing until
+  they approve it.
+- **What it would turn on:** only the lines from Step 2's plan that are off or
+  couldn't be read, each with its cost. Mark the ones you couldn't read as
+  "the skill checks this when you run it".
+- **Anything from Step 6 that applies**, such as runners or MCP client access.
+- **Who is asking and why:** the user, the project, and that their coding
+  agent is connected and ready to work with the reviews and fixes once the
+  group has them.
+
+Show the request to the user. Then offer to file it as an issue in this
+project that mentions up to three of the Owners, so it's tracked. Offer this
+only if the project has issues turned on (`issues_access_level` from the
+project read in 1a isn't `disabled`). Mentions notify people, so name who
+will be notified, and file it only on a yes:
+
+```bash
+glab api -X POST "projects/$ENC/issues" -H "Content-Type: application/json" --input - <<'EOF'
+{
+  "title": "Turn on GitLab Duo flows for <GROUP>",
+  "description": "<the request, with the @mentions, escaped for JSON>"
+}
+EOF
+```
+
+If the user says no, they keep the text and send it however they like. If
+the request fails, quote the error and give them the text.
+
 ## Step 7: Summary
 
 End with one short report. Leave out the Security line if Step 5 didn't run.
@@ -530,12 +599,12 @@ End with one short report. Leave out the Security line if Step 5 didn't run.
 ```
 ## GitLab setup for agentic engineering: <group or project> on <host>
 
-**Mode:** group (N projects) / project
+**Mode:** group (N projects) / project / member
 **Group settings turned on:** <list, or "already on">
 **Flows enabled for the group:** <list>; missing or unable to run: <list and why>
 **Fix CI/CD Pipeline automation:** created in N projects, already there in M, skipped K (no CI), re-run later: <list>
 **Automatic Code Review:** on for the group; projects still off: <list>
-**Needs someone else:** <list with who and the link>
+**Needs someone else:** <group mode: list with who and the link; project or member mode: the request from 6b, who it's for, and the issue link if filed>
 **Manual steps left:** <list, each with its link>
 **MCP server:** <harness>, <scope>, <signed in / waiting for sign-in>
 **Security:** <flows and profiles applied, preset, or what failed and its link>

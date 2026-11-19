@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.6 (2026-11-19)
+
+**Changed**
+- New member mode for anyone below Maintainer, replacing the read-only
+  report. The skill changes no GitLab settings, but still connects the
+  user's agent to the GitLab MCP server (the sign-in is per user and needs no
+  admin role), so the agent can work with Duo's reviews, pipelines and issues
+  right away.
+- New 6b for project and member mode: instead of a list of links, the skill
+  ends with one ready-to-send request for the group Owner. It looks up the
+  Owners, lists only what's off (with costs), and asks the Owner to run the
+  skill once. With the user's yes, it files the request as an issue in the
+  project that mentions up to three Owners.
+- Step 4 runs in every mode. 4d adds missing flows to the request in project
+  and member mode. The summary shows the mode and the request.
+
+**Not tested yet:** member mode and 6b on a live group, including the
+Owners read for a user who is only a project member, and filing the issue.
+
 ## 0.5.5 (2026-11-18)
 
 **Changed**
