@@ -102,14 +102,17 @@ instance-level Agent Platform and MCP settings first.
 1. Check the [requirements](#requirements), including GitLab Credits and a
    runner that can run flows in each project. Check project push rules if they
    might block the `duo-*` service accounts.
-2. In the top-level group, open **Settings > GitLab Duo > Change
-   configuration**. Turn on **GitLab Duo Agent Platform**, **Allow flow
-   execution**, and **Allow foundational flows**. Select **Code Review**,
+2. On GitLab.com, open the top-level group's **Settings > GitLab Duo > Change
+   configuration** and select **Turn on GitLab Duo Agentic Chat, agents, and
+   flows** under **GitLab Duo Agent Platform**. On Self-Managed or Dedicated,
+   ask an instance admin to enable Agent Platform, then open
+   the group's **Settings > General > GitLab Duo features**. Turn on **Allow
+   flow execution** and **Allow foundational flows**, select **Code Review**,
    **Fix CI/CD Pipeline**, and **Developer**, then save. Wait for the settings
    to reach the projects. [Flow settings](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/#turn-foundational-flows-on-or-off).
 3. In the group, open **Settings > General > Merge requests > GitLab Duo Code
-   Review** and enable automatic reviews. Check for project overrides under
-   **Settings > Merge requests**. [Automatic reviews](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#automatic-reviews).
+   Review** and select **Enable automatic reviews by GitLab Duo**. Check for
+   project overrides under **Settings > Merge requests**. [Automatic reviews](https://docs.gitlab.com/user/duo_agent_platform/flows/foundational_flows/code_review/#automatic-reviews).
 4. In each project with CI/CD, open **AI > Automations > New automation**.
    Name it, select **Fix CI/CD Pipeline** under **Runs with**, then add an
    **On an event** trigger for **Pipeline events > Failed** and create it.
