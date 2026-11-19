@@ -9,7 +9,10 @@ agentic engineering:
    fix, whichever agent or tool the change came from. Your agent can hand an
    issue or a merge conflict to the Developer flow.
 2. **Creates the automation that runs Fix CI/CD Pipeline on failed
-   pipelines**, in every project of the group.
+   pipelines**, in every project of the group. Its description names the
+   skill version, for example `Fix CI/CD Pipeline on failed pipelines
+   (gitlab-duo-setup 0.5.7)`, so you can tell it apart from automations
+   made by hand.
 3. **Connects your agent to the GitLab MCP server**
    (`https://<host>/api/v4/mcp`) and walks you through signing in with OAuth,
    so your agent can read what the flows found and act on it.

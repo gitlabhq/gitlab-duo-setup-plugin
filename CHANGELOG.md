@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.7 (2026-11-19)
+
+**Changed**
+- The Fix CI/CD Pipeline automation the skill creates now has the skill
+  version in its description: `Fix CI/CD Pipeline on failed pipelines
+  (gitlab-duo-setup 0.5.7)`. That tells automations the skill created apart
+  from ones made by hand, so flow runs can be tied to the skill.
+- Automations made by earlier versions keep their old description. The skill
+  skips projects that already have an active automation, so it doesn't
+  rename them.
+
+**Not tested yet:** creating an automation with the new description on a
+live project.
+
 ## 0.5.6 (2026-11-19)
 
 **Changed**

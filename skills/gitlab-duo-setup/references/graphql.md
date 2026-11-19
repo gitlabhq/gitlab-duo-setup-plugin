@@ -192,6 +192,9 @@ Needs Maintainer on the project (a group Owner has it everywhere).
 - Don't send `userId`. With a catalog entry, GitLab uses the entry's own
   service account and discards `userId`; a `userId` that doesn't match that
   account fails the request.
+- Send `description` exactly as below. The version in it marks the
+  automation as created by this skill, so it can be told apart from ones
+  made by hand.
 
 `filter` is a JSON value, so send the whole request as JSON:
 
@@ -202,7 +205,7 @@ glab api graphql -H "Content-Type: application/json" --input - <<'EOF'
   "variables": {
     "input": {
       "projectPath": "<path_with_namespace>",
-      "description": "Fix CI/CD Pipeline on failed pipelines",
+      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.7)",
       "eventTypes": [3],
       "aiCatalogItemConsumerId": "gid://gitlab/Ai::Catalog::ItemConsumer/<project consumer id>",
       "filter": {

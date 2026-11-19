@@ -107,7 +107,7 @@ state() {
 create() {  # create PROJECT CONSUMER_GID
   # No userId: with a catalog entry GitLab uses the entry's own service account (references/graphql.md).
   local input out errs try=1
-  input=$(jq -n --arg p "$1" --arg c "$2" '{projectPath:$p, description:"Fix CI/CD Pipeline on failed pipelines",
+  input=$(jq -n --arg p "$1" --arg c "$2" '{projectPath:$p, description:"Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.7)",
     eventTypes:[3], aiCatalogItemConsumerId:$c,
     filter:{pipeline_hooks:{match:"all", rules:[{field:"object_attributes.status", operator:"eq", value:"failed"}]}}}')
   while :; do
