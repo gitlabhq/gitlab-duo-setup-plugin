@@ -122,6 +122,14 @@ change. That goes for the secret detection profile too: pick it by its
 
 ## 3. Apply the SAST and secret detection profiles, then the triage and remediation profile
 
+Before the first profile mutation, make sure the user heard the Step 5 CI
+warning and agreed to proceed: in projects without `workflow:rules`, scan
+profiles can create a separate MR pipeline that appears green while tests
+fail in a branch pipeline. The skill does not change `.gitlab-ci.yml`. Tell
+the user to check both pipeline types and configure `workflow:rules` and job
+rules so the intended MR pipeline includes both tests and scans. See
+https://docs.gitlab.com/ci/yaml/workflow/#switch-between-branch-pipelines-and-merge-request-pipelines.
+
 One mutation per profile, three in all, in this order: SAST, secret
 detection, triage and remediation. Passing the group applies the profile to every
 project in the group and its subgroups, in the background.

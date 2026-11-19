@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.7 (2026-11-19)
+
+**Changed**
+- Add a by-hand setup guide to the README, with the core GitLab UI steps and
+  the optional Ultimate security step.
+- Warn before applying security scan profiles that projects without
+  `workflow:rules` can show a green MR scan pipeline even when branch tests
+  fail. Point users to CI rules so tests and scans run in the intended
+  pipeline; the skill does not edit CI configuration.
+- Add the OAuth registration 429 to MCP troubleshooting: at most 10 new
+  registrations per IP per hour; users can retry when the window resets.
+
 ## 0.5.6 (2026-11-19)
 
 **Changed**
