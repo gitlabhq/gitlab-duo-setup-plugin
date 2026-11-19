@@ -3,6 +3,20 @@
 ## 0.5.7 (2026-11-19)
 
 **Changed**
+<<<<<<< HEAD
+- The Fix CI/CD Pipeline automation the skill creates now has the skill
+  version in its description: `Fix CI/CD Pipeline on failed pipelines
+  (gitlab-duo-setup 0.5.7)`. That tells automations the skill created apart
+  from ones made by hand, so flow runs can be tied to the skill.
+- When creating the automation fails in a project, the skill gives the link
+  to create it by hand and the description to use, so it carries the tag too.
+- Automations made by earlier versions keep their old description. The skill
+  skips projects that already have an active automation, so it doesn't
+  rename them.
+
+**Not tested yet:** creating an automation with the new description on a
+live project.
+=======
 - Add a by-hand setup guide to the README, with the core GitLab UI steps and
   the optional Ultimate security step.
 - Warn before applying security scan profiles that projects without
@@ -11,6 +25,7 @@
   pipeline; the skill does not edit CI configuration.
 - Add the OAuth registration 429 to MCP troubleshooting: at most 10 new
   registrations per IP per hour; users can retry when the window resets.
+>>>>>>> origin/main
 
 ## 0.5.6 (2026-11-19)
 

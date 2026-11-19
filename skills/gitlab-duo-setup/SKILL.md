@@ -325,7 +325,10 @@ user. When a create fails because the user saved them "too many times", wait
 next project on this error: in a group with more than about 30 projects,
 that silently leaves projects without the automation until someone runs the
 skill again. Quote any other error and keep going; one failing project
-doesn't stop the rest.
+doesn't stop the rest. For each project that failed, give the New automation
+link and tell the user to set the description to `Fix CI/CD Pipeline on
+failed pipelines (gitlab-duo-setup 0.5.7)` when they create it by hand, so it
+still counts as made by the skill.
 
 ### 3d. Check the cascade landed
 
