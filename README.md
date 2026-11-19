@@ -26,10 +26,17 @@ It works on GitLab.com, Self-Managed and Dedicated.
 
 ## Who can run it
 
+Anyone on the team can run it. What it does depends on your role:
+
 - **Owner of the top-level group**: sets up the whole group and every
   project in it. This is the recommended path.
-- **Maintainer of a project**: sets up that project, and tells you what to ask
-  your group Owner to turn on.
+- **Maintainer of a project**: sets up that project, then writes a
+  ready-to-send request for your group Owner covering the group-wide parts.
+- **Anyone else on the team**: changes no GitLab settings. It connects your
+  agent to the GitLab MCP server, so your agent can work with Duo's reviews
+  and pipeline results, and writes a ready-to-send request for your group
+  Owner. If you say yes, it files the request as an issue that mentions the
+  Owners.
 
 ## Requirements
 
