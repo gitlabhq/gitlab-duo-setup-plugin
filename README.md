@@ -313,8 +313,7 @@ skills/gitlab-mr-followup/
 
 ## Privacy
 
-The skills run inside your coding agent and send nothing to GitLab Inc. or
-any third party on their own. They call your GitLab instance through `glab`
+The skills run inside your coding agent. They call your GitLab instance through `glab`
 and the GitLab MCP server, using your own sign-in, and change only what you
 approve. The GitLab Duo flows they turn on run on your GitLab instance under
 GitLab's terms. See the [GitLab Privacy Statement](https://about.gitlab.com/privacy/).
