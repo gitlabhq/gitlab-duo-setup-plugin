@@ -1,4 +1,4 @@
-# GitLab Duo setup skill
+# GitLab Duo Setup Skill
 
 An Agent Skill for Claude Code, Codex, Cursor, Devin and OpenCode users. Load
 it, ask your agent to "set up GitLab Duo", and it sets up GitLab for
