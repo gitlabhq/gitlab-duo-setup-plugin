@@ -388,8 +388,7 @@ Don't configure both: two GitLab servers show duplicate tools. Check first
 for any MCP server that already points at `https://<HOST>/api/v4/mcp`, and
 match on the URL, not the name. The GitLab plugin in Claude's plugin directory
 adds one named `gitlab`, and a claude.ai connector, another plugin or an older
-setup can add one under another name. `references/harnesses.md` says where
-each harness lists them.
+setup can add one under another name. 
 
 - Same URL, added by a plugin or connector (in Claude Code, `claude mcp list`
   shows it with a `plugin:` or `claude.ai` prefix, such as
