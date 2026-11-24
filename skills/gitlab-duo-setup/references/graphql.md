@@ -205,7 +205,7 @@ glab api graphql -H "Content-Type: application/json" --input - <<'EOF'
   "variables": {
     "input": {
       "projectPath": "<path_with_namespace>",
-      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.7)",
+      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.8)",
       "eventTypes": [3],
       "aiCatalogItemConsumerId": "gid://gitlab/Ai::Catalog::ItemConsumer/<project consumer id>",
       "filter": {

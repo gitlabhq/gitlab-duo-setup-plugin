@@ -1,0 +1,27 @@
+{
+  "name": "gitlab-duo-setup",
+  "displayName": "GitLab Duo Setup",
+  "version": "0.5.8",
+  "description": "Turns on GitLab Duo Code Review and Fix CI/CD Pipeline for your group, connects the GitLab MCP server, and follows your merge requests through review and pipeline fixes. Works on GitLab.com, Self-Managed and Dedicated.",
+  "author": {
+    "name": "GitLab",
+    "url": "https://about.gitlab.com"
+  },
+  "homepage": "https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin",
+  "repository": "https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin",
+  "documentationUrl": "https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin#readme",
+  "supportUrl": "https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin/-/issues",
+  "privacyPolicyUrl": "https://about.gitlab.com/privacy/",
+  "icon": "./assets/icon.png",
+  "license": "MIT",
+  "keywords": [
+    "gitlab",
+    "gitlab-duo",
+    "duo-agent-platform",
+    "code-review",
+    "ci-cd",
+    "merge-request",
+    "mcp",
+    "devsecops"
+  ]
+}
