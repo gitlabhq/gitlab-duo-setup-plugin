@@ -4,7 +4,7 @@ This repository holds two Agent Skills: `skills/gitlab-duo-setup/`, which turns
 on GitLab Duo Agent Platform and connects Claude Code, Codex, Cursor, Devin or
 OpenCode to the GitLab MCP server, and `skills/gitlab-mr-followup/`, which
 follows a merge request to merge. The repository root is also a Claude plugin,
-`gitlab-duo` (`.claude-plugin/plugin.json`). See `README.md`.
+GitLab Duo Setup, `gitlab-duo-setup` (`.claude-plugin/plugin.json`). See `README.md`.
 
 - Keep the skill harness-neutral: it must work in Claude Code, Codex, Cursor,
   Devin and OpenCode.

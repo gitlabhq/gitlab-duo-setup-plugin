@@ -1,15 +1,15 @@
 {
-  "name": "gitlab-duo",
+  "name": "gitlab-duo-setup",
   "owner": {
     "name": "GitLab",
     "url": "https://about.gitlab.com"
   },
-  "description": "GitLab's Claude plugin for setting up GitLab Duo Agent Platform and following merge requests to merge.",
+  "description": "GitLab's Claude plugin for turning on GitLab Duo Code Review and Fix CI/CD Pipeline and following merge requests to merge.",
   "plugins": [
     {
-      "name": "gitlab-duo",
+      "name": "gitlab-duo-setup",
       "source": "./",
-      "description": "Set up GitLab Duo Agent Platform from Claude and follow merge requests through review and pipeline fixes.",
+      "description": "Turns on GitLab Duo Code Review and Fix CI/CD Pipeline for your group, connects the GitLab MCP server, and follows your merge requests through review and pipeline fixes. Works on GitLab.com, Self-Managed and Dedicated.",
       "category": "development"
     }
   ]

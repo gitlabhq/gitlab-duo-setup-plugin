@@ -57,13 +57,14 @@ Anyone on the team can run it. What it does depends on your role:
 
 ### Claude Code: install the plugin
 
-This repository is also a Claude plugin, `gitlab-duo`, that installs both
+This repository is also a Claude plugin, GitLab Duo Setup
+(`gitlab-duo-setup`), that installs both
 skills (`gitlab-duo-setup` and [`gitlab-mr-followup`](#follow-up-on-merge-requests))
 in one step. In Claude Code, run:
 
 ```text
 /plugin marketplace add https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin.git
-/plugin install gitlab-duo@gitlab-duo
+/plugin install gitlab-duo-setup@gitlab-duo-setup
 ```
 
 Or from a shell:
@@ -73,18 +74,24 @@ claude plugin marketplace add https://gitlab.com/gitlab-org/developer-relations/
 ```
 
 ```bash
-claude plugin install gitlab-duo@gitlab-duo
+claude plugin install gitlab-duo-setup@gitlab-duo-setup
 ```
 
-To update later, run `/plugin marketplace update gitlab-duo`. To remove it,
-run `/plugin uninstall gitlab-duo@gitlab-duo`.
+To update later, run `/plugin marketplace update gitlab-duo-setup`. To remove it,
+run `/plugin uninstall gitlab-duo-setup@gitlab-duo-setup`.
 
 Plugin skills are named after the plugin, so you call them as
-`/gitlab-duo:gitlab-duo-setup` and `/gitlab-duo:gitlab-mr-followup`, or just
+`/gitlab-duo-setup:gitlab-duo-setup` and `/gitlab-duo-setup:gitlab-mr-followup`, or just
 ask in plain words (see [Example prompts](#example-prompts)).
 
 The plugin is not in Claude's public plugin directory yet. Once it is, you
 can also add it from the directory in Claude.
+
+It works alongside the GitLab plugin in Claude's plugin directory. That plugin
+connects Claude to the GitLab MCP server; this one turns on GitLab Duo for your
+group and follows your merge requests. If you already have a GitLab MCP
+connection, from that plugin or anywhere else, the setup skill reuses it
+instead of adding a second one.
 
 ### Any harness: copy the skill folder
 
@@ -122,7 +129,7 @@ it isn't listed twice.
 
 | Harness | Syntax |
 | --- | --- |
-| Claude Code (plugin) | `/gitlab-duo:gitlab-duo-setup` |
+| Claude Code (plugin) | `/gitlab-duo-setup:gitlab-duo-setup` |
 | Claude Code (copied folder) | `/gitlab-duo-setup` |
 | Codex | `$gitlab-duo-setup` |
 | Cursor | `/gitlab-duo-setup` |

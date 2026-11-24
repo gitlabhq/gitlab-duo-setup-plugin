@@ -384,9 +384,20 @@ Devin, or OpenCode. Then ask where to put the config:
 - **User-level** (default): works in every repo, nothing to commit.
 - **Project-level**: committed so teammates get it too.
 
-Don't configure both: two servers named `GitLab` show duplicate tools. Check
-for an existing `GitLab` entry first:
+Don't configure both: two GitLab servers show duplicate tools. Check first
+for any MCP server that already points at `https://<HOST>/api/v4/mcp`, and
+match on the URL, not the name. The GitLab plugin in Claude's plugin directory
+adds one named `gitlab`, and a claude.ai connector, another plugin or an older
+setup can add one under another name. `references/harnesses.md` says where
+each harness lists them.
 
+- Same URL, added by a plugin or connector (in Claude Code, `claude mcp list`
+  shows it with a `plugin:` or `claude.ai` prefix, such as
+  `plugin:gitlab:gitlab`): reuse it. Don't add a `GitLab` entry and don't edit
+  the plugin's files. Say which entry you're reusing and skip to 4c. A
+  plugin's entry can't take a toolsets header, so if the user wants an opt-in
+  toolset, explain that and ask before adding a separate `GitLab` entry and
+  turning off the plugin's server.
 - Same URL and no toolsets header: say so and skip to 4c.
 - Same URL with a toolsets header that leaves out `work_items` (older versions
   of this skill wrote one): offer to rewrite the entry without the header, or
@@ -408,7 +419,8 @@ example) don't hand the turn back to you after sign-in.
 
 - **Claude Code**: new servers load at session start. Ask the user to restart
   Claude Code (or `/exit` and run `claude --continue`), then run `/mcp`,
-  select **GitLab**, choose **Authenticate**, and approve in the browser.
+  select **GitLab** (or the existing entry you're reusing, such as
+  `plugin:gitlab:gitlab`), choose **Authenticate**, and approve in the browser.
 - **Codex**: ask the user to run `codex mcp login GitLab` and approve in the
   browser, then restart Codex.
 - **Cursor (IDE)**: Settings > Cursor Settings > Tools & MCP > GitLab > Connect

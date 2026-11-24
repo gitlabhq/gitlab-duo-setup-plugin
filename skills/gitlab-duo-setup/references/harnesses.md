@@ -19,8 +19,11 @@ toolsets header unless the user asks for an opt-in toolset. See
 
 ## Claude Code
 
-**User-level**: check first with `claude mcp list` and `claude mcp get GitLab`,
-then:
+**User-level**: check first with `claude mcp list` and `claude mcp get GitLab`.
+Look for any entry whose URL is `https://<HOST>/api/v4/mcp`, whatever its
+name: plugin servers show as `plugin:<plugin>:<server>` (the GitLab plugin's is
+`plugin:gitlab:gitlab`) and claude.ai connectors start with `claude.ai`. If one
+exists, reuse it (SKILL.md, Step 4a). Otherwise:
 
 ```bash
 claude mcp add -s user --transport http GitLab https://<HOST>/api/v4/mcp
