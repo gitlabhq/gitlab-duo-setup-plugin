@@ -11,7 +11,7 @@ agentic engineering:
 2. **Creates the automation that runs Fix CI/CD Pipeline on failed
    pipelines**, in every project of the group. Its description names the
    skill version, for example `Fix CI/CD Pipeline on failed pipelines
-   (gitlab-duo-setup 0.5.7)`, so you can tell it apart from automations
+   (gitlab-duo-setup 0.5.8)`, so you can tell it apart from automations
    made by hand.
 3. **Connects your agent to the GitLab MCP server**
    (`https://<host>/api/v4/mcp`) and walks you through signing in with OAuth,
@@ -55,6 +55,39 @@ Anyone on the team can run it. What it does depends on your role:
 
 ## Install
 
+### Claude Code: install the plugin
+
+This repository is also a Claude plugin, `gitlab-duo`, that installs both
+skills (`gitlab-duo-setup` and [`gitlab-mr-followup`](#follow-up-on-merge-requests))
+in one step. In Claude Code, run:
+
+```text
+/plugin marketplace add https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin.git
+/plugin install gitlab-duo@gitlab-duo
+```
+
+Or from a shell:
+
+```bash
+claude plugin marketplace add https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin.git
+```
+
+```bash
+claude plugin install gitlab-duo@gitlab-duo
+```
+
+To update later, run `/plugin marketplace update gitlab-duo`. To remove it,
+run `/plugin uninstall gitlab-duo@gitlab-duo`.
+
+Plugin skills are named after the plugin, so you call them as
+`/gitlab-duo:gitlab-duo-setup` and `/gitlab-duo:gitlab-mr-followup`, or just
+ask in plain words (see [Example prompts](#example-prompts)).
+
+The plugin is not in Claude's public plugin directory yet. Once it is, you
+can also add it from the directory in Claude.
+
+### Any harness: copy the skill folder
+
 Copy `skills/gitlab-duo-setup/` into your harness's skills directory:
 
 | Harness | User-level | Project-level |
@@ -66,8 +99,8 @@ Copy `skills/gitlab-duo-setup/` into your harness's skills directory:
 | OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` |
 
 ```bash
-git clone https://gitlab.com/gitlab-da/projects/agentic-eng-config.git
-cp -R agentic-eng-config/skills/gitlab-duo-setup ~/.claude/skills/
+git clone https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin.git
+cp -R gitlab-duo-setup-plugin/skills/gitlab-duo-setup ~/.claude/skills/
 ```
 
 Then reload your harness so it sees the new skill:
@@ -89,11 +122,26 @@ it isn't listed twice.
 
 | Harness | Syntax |
 | --- | --- |
-| Claude Code | `/gitlab-duo-setup` |
+| Claude Code (plugin) | `/gitlab-duo:gitlab-duo-setup` |
+| Claude Code (copied folder) | `/gitlab-duo-setup` |
 | Codex | `$gitlab-duo-setup` |
 | Cursor | `/gitlab-duo-setup` |
 | Devin | `@skills:gitlab-duo-setup` |
 | OpenCode | `@gitlab-duo-setup` |
+
+## Example prompts
+
+You don't need the slash command. Ask in plain words, for example:
+
+- "Set up GitLab Duo for this group."
+- "Check whether Duo Code Review and Fix CI/CD Pipeline are turned on for
+  this project, and fix what's missing."
+- "Connect Claude to the GitLab MCP server for gitlab.example.com."
+- "Add SAST false positive detection and vulnerability resolution to our
+  Ultimate group."
+- "I just pushed to my merge request. Wait for the pipeline and Duo's review,
+  then fix what they find."
+- "What's blocking !42 from merging?"
 
 ## Set it up by hand
 
@@ -237,7 +285,13 @@ in each harness, and an `AGENTS.md` pointer that helps agents reach for it.
 
 ## Layout
 
+The repository root is the plugin root.
+
 ```
+.claude-plugin/plugin.json      Claude plugin manifest (name, version, icon, links)
+.claude-plugin/marketplace.json lets Claude Code add this repository as a marketplace
+assets/icon.png                 plugin icon (GitLab logomark)
+
 skills/gitlab-duo-setup/
   SKILL.md                  the skill
   references/harnesses.md   MCP config and sign-in per harness
@@ -249,3 +303,27 @@ skills/gitlab-mr-followup/
   SKILL.md                  the skill
   references/harnesses.md   install paths, how to call it, AGENTS.md pointer
 ```
+
+## Privacy
+
+The skills run inside your coding agent and send nothing to GitLab Inc. or
+any third party on their own. They call your GitLab instance through `glab`
+and the GitLab MCP server, using your own sign-in, and change only what you
+approve. The GitLab Duo flows they turn on run on your GitLab instance under
+GitLab's terms. See the [GitLab Privacy Statement](https://about.gitlab.com/privacy/).
+
+## Support
+
+Open an issue in this project:
+<https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin/-/issues>.
+For problems with GitLab Duo itself, use your usual
+[GitLab support](https://about.gitlab.com/support/) channel.
+
+## Security
+
+Please don't report security issues in a public issue. Follow GitLab's
+[responsible disclosure process](https://about.gitlab.com/security/disclosure/).
+
+## License
+
+[MIT](LICENSE)

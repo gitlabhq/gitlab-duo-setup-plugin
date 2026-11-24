@@ -1,9 +1,9 @@
 ---
 name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project; for anyone else it changes no GitLab settings, connects the agent to GitLab and writes a ready-to-send request for the group Owner. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
-compatibility: Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated.
+compatibility: "Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated."
 metadata:
-  version: "0.5.7"
+  version: "0.5.8"
 ---
 
 # gitlab-duo-setup
@@ -327,7 +327,7 @@ that silently leaves projects without the automation until someone runs the
 skill again. Quote any other error and keep going; one failing project
 doesn't stop the rest. For each project that failed, give the New automation
 link and tell the user to set the description to `Fix CI/CD Pipeline on
-failed pipelines (gitlab-duo-setup 0.5.7)` when they create it by hand, so it
+failed pipelines (gitlab-duo-setup 0.5.8)` when they create it by hand, so it
 still counts as made by the skill.
 
 ### 3d. Check the cascade landed
@@ -569,7 +569,7 @@ Write the request in plain words, short enough to paste into a chat or an
 issue:
 
 - **The ask:** install this skill
-  (https://gitlab.com/gitlab-da/projects/agentic-eng-config) and run it once
+  (https://gitlab.com/gitlab-org/developer-relations/gitlab-duo-setup-plugin) and run it once
   for the top-level group. It shows the full plan and changes nothing until
   they approve it.
 - **What it would turn on:** only the lines from Step 2's plan that are off or

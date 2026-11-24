@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.8 (2026-11-24)
+
+**Changed**
+
+- The `compatibility` value in `SKILL.md` is now quoted. The unquoted colon
+  in "jq is optional: with it" made the frontmatter invalid YAML.
+- The Fix CI/CD Pipeline automation description now names 0.5.8.
+- The project moved to `gitlab-org/developer-relations/gitlab-duo-setup-plugin`.
+  Links in the README, `SKILL.md` and `plugin.json` now use the new path.
+
+**Added**
+
+- The repository is now also a Claude plugin, `gitlab-duo`, that ships both
+  skills (`gitlab-duo-setup` and `gitlab-mr-followup`):
+  `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and
+  `assets/icon.png`. The skills' paths are unchanged, so copying a skill
+  folder by hand still works.
+
 ## 0.5.7 (2026-11-19)
 
 **Changed**
