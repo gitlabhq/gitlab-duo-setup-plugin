@@ -144,7 +144,7 @@ query($project: ID!, $item: AiCatalogItemID!) {
     }
     aiFlowTriggers(first: 50) {
       nodes {
-        id active eventTypes filter
+        id description active eventTypes filter
         aiCatalogItemConsumer { item { foundationalFlowReference } }
       }
     }
@@ -179,7 +179,13 @@ automation if any node has:
 - `eventTypes` containing `3` (pipeline events)
 
 If that node has `active: true`, skip the project. If `active: false`, list it
-and leave it alone.
+and don't turn it on.
+
+In both cases, check whether an earlier version of this skill created it with
+only the status rule: its `description` starts with `Fix CI/CD Pipeline on
+failed pipelines` and `filter.pipeline_hooks.rules` has one rule, on
+`object_attributes.status`. If so, update it ("Update an automation an
+earlier version created" below). Leave every other automation as it is.
 
 Fix CI/CD Pipeline has no default automation: GitLab doesn't create one when
 the flow is turned on, so this step is always needed.
@@ -205,13 +211,16 @@ glab api graphql -H "Content-Type: application/json" --input - <<'EOF'
   "variables": {
     "input": {
       "projectPath": "<path_with_namespace>",
-      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.8)",
+      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.9)",
       "eventTypes": [3],
       "aiCatalogItemConsumerId": "gid://gitlab/Ai::Catalog::ItemConsumer/<project consumer id>",
       "filter": {
         "pipeline_hooks": {
           "match": "all",
-          "rules": [{ "field": "object_attributes.status", "operator": "eq", "value": "failed" }]
+          "rules": [
+            { "field": "object_attributes.status", "operator": "eq", "value": "failed" },
+            { "field": "object_attributes.source", "operator": "in", "value": ["push", "merge_request_event"] }
+          ]
         }
       }
     }
@@ -220,8 +229,19 @@ glab api graphql -H "Content-Type: application/json" --input - <<'EOF'
 EOF
 ```
 
-The flow itself only runs on failed, finished pipelines, so the filter
-matches what the flow accepts. Tested on GitLab.com on 2026-11-17 without
+The flow itself only runs on failed, finished pipelines, so the status rule
+matches what the flow accepts.
+
+The source rule keeps the automation to pipelines a push or a merge request
+started. Without it, a scheduled pipeline that keeps failing starts a new
+session on every run: in one demo project in November 2026, a schedule that
+ran every 15 minutes started 86 sessions in about a day. It also leaves out
+API, trigger and multi-project pipelines, and pipelines from Duo's own
+sessions (source `duo_workflow`). GitLab accepts `object_attributes.source`
+for pipeline automations, with any pipeline source as a value and the `in` and
+`not_in` operators (`ee/app/models/ai/flow_trigger.rb`, checked on
+2026-11-25). The trade-off: a scheduled pipeline that fails on a healthy
+project gets no automatic fix. Tested on GitLab.com on 2026-11-17 without
 `userId`, in 21 projects: each request created an active automation that
 runs as the Fix CI/CD Pipeline service account, and a second run of the loop
 found them all and created none. With a `userId` that isn't the entry's
@@ -237,3 +257,37 @@ them "too many times. Try again in a minute." Wait 65 seconds and send the
 same request again, up to 3 times; don't skip the project.
 `scripts/automations.sh` does this. Seen on GitLab.com in an automated run
 (by Claude, an AI agent) that created automations for 18 projects in a row.
+
+## Update an automation an earlier version created
+
+Versions before 0.5.9 created the automation with only the status rule. Give
+it the source rule and the new description; leave `active` as it is, so an
+automation someone turned off stays off. Needs Maintainer on the project.
+`id` is the automation's `id` from the readiness check.
+
+```bash
+glab api graphql -H "Content-Type: application/json" --input - <<'EOF'
+{
+  "query": "mutation($input: AiFlowTriggerUpdateInput!) { aiFlowTriggerUpdate(input: $input) { aiFlowTrigger { id active filter } errors errorReason } }",
+  "variables": {
+    "input": {
+      "id": "<automation id>",
+      "description": "Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.9)",
+      "filter": {
+        "pipeline_hooks": {
+          "match": "all",
+          "rules": [
+            { "field": "object_attributes.status", "operator": "eq", "value": "failed" },
+            { "field": "object_attributes.source", "operator": "in", "value": ["push", "merge_request_event"] }
+          ]
+        }
+      }
+    }
+  }
+}
+EOF
+```
+
+`aiFlowTriggerUpdate` takes `filter` and `description` (checked against
+GitLab's source on 2026-11-25) and counts toward the same save rate limit as
+creating. `scripts/automations.sh` does this for every project it finds.

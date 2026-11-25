@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.9 (2026-11-25)
+
+**Fixed**
+
+- The Fix CI/CD Pipeline automation now starts a session only for failed
+  pipelines from a push or a merge request (`object_attributes.source` in
+  `push`, `merge_request_event`). Before, it fired on every failed pipeline.
+  In one demo project, a schedule that ran every 15 minutes and kept failing
+  started 86 sessions in about a day, each billed as Duo Agent Platform
+  usage. Scheduled, API, trigger and multi-project pipelines, and pipelines
+  from Duo's own sessions, no longer start one. Trade-off: a scheduled
+  pipeline that fails on a healthy project gets no automatic fix.
+- Running the skill (or `scripts/automations.sh`) again adds that rule to
+  automations an earlier version created, with `aiFlowTriggerUpdate`. It
+  only changes automations whose description starts with `Fix CI/CD
+  Pipeline on failed pipelines` and whose filter has only the status rule,
+  and it never changes `active`. The script reports them as `upgraded`.
+
+**Not tested yet:** the new filter and the update on GitLab.com. The script
+was checked with `bash -n` and with stubbed GraphQL responses for an old
+automation, a new one, a custom one, a turned-off one, a filter returned as a
+string, and a project without one. The filter field and operators were
+checked against `ee/app/models/ai/flow_trigger.rb`.
+
 ## 0.5.8 (2026-11-24)
 
 **Changed**
