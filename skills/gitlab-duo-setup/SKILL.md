@@ -628,7 +628,7 @@ End with one short report. Leave out the Security line if Step 5 didn't run.
 **Mode:** group (N projects) / project / member
 **Group settings turned on:** <list, or "already on">
 **Flows enabled for the group:** <list>; missing or unable to run: <list and why>
-**Fix CI/CD Pipeline automation:** created in N projects, already there in M, skipped K (no CI), re-run later: <list>
+**Fix CI/CD Pipeline automation:** created in N projects, already there in M, limited to push and MR pipelines in U, skipped K (no CI), re-run later: <list>
 **Automatic Code Review:** on for the group; projects still off: <list>
 **Needs someone else:** <group mode: list with who and the link; project or member mode: the request from 6b, who it's for, and the issue link if filed>
 **Manual steps left:** <list, each with its link>
@@ -645,7 +645,8 @@ flow actually run, not only read results:
 - **Developer**: ask the agent to hand an issue to the Developer flow. It
   starts a session with `start_duo_session`, flow `developer/v1`, and the
   issue as the goal, and the flow opens a merge request.
-- **Fix CI/CD Pipeline**: the next failed pipeline starts it. To try it now on
+- **Fix CI/CD Pipeline**: the next failed pipeline from a push or a merge
+  request starts it (scheduled pipelines don't). To try it now on
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
 - **Security triage and remediation** (if on): after the next scan on the
