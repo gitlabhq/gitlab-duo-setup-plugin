@@ -3,7 +3,7 @@ name: gitlab-duo-setup
 description: Set up GitLab for agentic engineering from your coding agent (Claude Code, Codex, Cursor, Devin, or OpenCode). Use this when the user asks to set up, enable, turn on, or check GitLab Duo, Duo Agent Platform, Duo flows, Duo Code Review, Fix CI/CD Pipeline, flow triggers or automations, GitLab security flows (SAST false positive detection, Secrets false positive detection, SAST vulnerability resolution, Security Review), or the GitLab MCP server, or asks to connect their agent to GitLab. For a top-level group Owner it turns on Code Review, Fix CI/CD Pipeline and Developer for the whole group and creates the Fix CI/CD Pipeline automation in every project; for a project Maintainer it sets up the current project; for anyone else it changes no GitLab settings, connects the agent to GitLab and writes a ready-to-send request for the group Owner. It adds the GitLab MCP server to the local harness and walks the user through OAuth sign-in. On Ultimate, once that works, it offers to add security triage and remediation.
 compatibility: "Requires git and glab (authenticated). jq is optional: with it, the group-wide automation step runs as one script (scripts/automations.sh). Works on GitLab.com, Self-Managed and Dedicated."
 metadata:
-  version: "0.5.8"
+  version: "0.5.9"
 ---
 
 # gitlab-duo-setup
@@ -191,7 +191,7 @@ and what it costs.
 | Automatic reviews | Group, cascades to projects | Duo reviews every new, non-draft MR | Credits per review |
 | Fix CI/CD Pipeline flow | Group | Adds `fix_pipeline/v1` to the group's flows | None by itself |
 | Developer flow | Group | Adds `developer/v1` to the group's flows. Runs only when someone starts it: assigns it an issue, mentions it, or asks the agent to hand off an issue or a merge conflict | Credits per session |
-| Fix CI/CD Pipeline automation | Every project with CI (N projects) | Each failed pipeline starts a session that can push a fix or open an MR | Credits per failed pipeline |
+| Fix CI/CD Pipeline automation | Every project with CI (N projects) | Each failed pipeline from a push or a merge request starts a session that can push a fix or open an MR. Scheduled, API and trigger pipelines don't, so a schedule that keeps failing doesn't start a session on every run | Credits per failed pipeline |
 
 If a setting is already on, say so and leave it out of the plan.
 
@@ -276,7 +276,8 @@ minutes.
 **If `jq` is installed, run the script that ships with this skill instead of
 3b and 3c by hand.** It lists the projects (skipping archived ones, empty ones
 and ones with CI/CD off), waits for each to be ready, skips projects that
-already have the automation, creates it in the rest, and retries when GitLab
+already have the automation, creates it in the rest, adds the push-and-MR-only
+rule to automations an earlier version created, and retries when GitLab
 rate-limits saves. In a group with hundreds of projects, making these calls
 one at a time from the agent is slow and easy to get wrong halfway.
 
@@ -286,8 +287,8 @@ bash <skill-dir>/scripts/automations.sh --group "$GROUP" --hostname "$HOST" --ap
 ```
 
 In project mode, pass `--project "$PROJECT"` instead of `--group`. The last
-line is `RESULT {...}` with `created`, `existing`, `inactive`, `pending`,
-`failed` and `no_runner`: use it for the summary. Exit code `3` means some
+line is `RESULT {...}` with `created`, `existing`, `upgraded`, `inactive`,
+`pending`, `failed` and `no_runner`: use it for the summary. Exit code `3` means some
 projects are still pending or failed; running it again picks them up without
 duplicates. Right after 3a, GitLab may not have set the flow up for the group
 yet; the script then waits for each project instead of stopping. If projects
@@ -312,7 +313,14 @@ For each ready project (group mode) or this project (project mode):
 1. Read its automations ("Read a project's automations").
 2. If it has an active automation that runs Fix CI/CD Pipeline on pipeline
    events, skip it. If it has one that's turned off, list it and don't
-   change it: someone may have turned it off on purpose.
+   turn it on: someone may have turned it off on purpose.
+   Either way, if an earlier version of this skill created it (its
+   description starts with `Fix CI/CD Pipeline on failed pipelines`) and its
+   filter has only the status rule, add the push-and-MR-only rule ("Update an
+   automation an earlier version created" in `references/graphql.md`).
+   Without it, a scheduled pipeline that keeps failing starts a new session
+   on every run. Don't change `active`, and leave automations with any other
+   filter alone: someone changed them on purpose.
 3. Otherwise create one ("Create the Fix CI/CD Pipeline automation").
 
 Read readiness and automations 5 projects per GraphQL request (more than 6
@@ -327,8 +335,9 @@ that silently leaves projects without the automation until someone runs the
 skill again. Quote any other error and keep going; one failing project
 doesn't stop the rest. For each project that failed, give the New automation
 link and tell the user to set the description to `Fix CI/CD Pipeline on
-failed pipelines (gitlab-duo-setup 0.5.8)` when they create it by hand, so it
-still counts as made by the skill.
+failed pipelines (gitlab-duo-setup 0.5.9)` when they create it by hand, so it
+still counts as made by the skill, and to add a second rule under **Run
+when**: pipeline source is push or merge request event.
 
 ### 3d. Check the cascade landed
 
@@ -619,7 +628,7 @@ End with one short report. Leave out the Security line if Step 5 didn't run.
 **Mode:** group (N projects) / project / member
 **Group settings turned on:** <list, or "already on">
 **Flows enabled for the group:** <list>; missing or unable to run: <list and why>
-**Fix CI/CD Pipeline automation:** created in N projects, already there in M, skipped K (no CI), re-run later: <list>
+**Fix CI/CD Pipeline automation:** created in N projects, already there in M, limited to push and MR pipelines in U, skipped K (no CI), re-run later: <list>
 **Automatic Code Review:** on for the group; projects still off: <list>
 **Needs someone else:** <group mode: list with who and the link; project or member mode: the request from 6b, who it's for, and the issue link if filed>
 **Manual steps left:** <list, each with its link>
@@ -636,7 +645,8 @@ flow actually run, not only read results:
 - **Developer**: ask the agent to hand an issue to the Developer flow. It
   starts a session with `start_duo_session`, flow `developer/v1`, and the
   issue as the goal, and the flow opens a merge request.
-- **Fix CI/CD Pipeline**: the next failed pipeline starts it. To try it now on
+- **Fix CI/CD Pipeline**: the next failed pipeline from a push or a merge
+  request starts it (scheduled pipelines don't). To try it now on
   a failed pipeline, start a session with the MCP tool `start_duo_session`,
   flow `fix_pipeline/v1`, and the failed pipeline's URL as the goal.
 - **Security triage and remediation** (if on): after the next scan on the

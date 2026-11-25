@@ -4,7 +4,8 @@
 #
 # Does SKILL.md steps 3b and 3c: waits until GitLab has set up Fix CI/CD Pipeline
 # in each project, skips projects that already have the automation, creates it
-# in the rest, and retries when GitLab rate-limits saves. Dry run by default.
+# in the rest, and retries when GitLab rate-limits saves. Automations an earlier
+# version created get the push-and-MR-only rule added. Dry run by default.
 #
 #   automations.sh --group my-group                 # show what it would do
 #   automations.sh --group my-group --apply         # do it
@@ -48,6 +49,14 @@ gql() {  # gql QUERY VARIABLES_JSON -> .data; non-zero on GraphQL errors
 }
 say() { printf '%-60s %s\n' "$1" "$2"; }
 
+# The automation this skill creates. The description marks it as made by the skill.
+# Only pipelines from a push or a merge request start a session: a scheduled pipeline that
+# keeps failing would otherwise start a new session on every run, and API, trigger and
+# Duo's own session pipelines (source duo_workflow) are left out for the same reason.
+DESC="Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.9)"
+DESC_PREFIX="Fix CI/CD Pipeline on failed pipelines"
+FILTER='{"pipeline_hooks":{"match":"all","rules":[{"field":"object_attributes.status","operator":"eq","value":"failed"},{"field":"object_attributes.source","operator":"in","value":["push","merge_request_event"]}]}}'
+
 # ---------- projects ----------
 if [[ -n $GROUP ]]; then
   GROUP_ID=$(api "groups/$(enc "$GROUP")?with_projects=false" | jq -r '.id')
@@ -87,50 +96,78 @@ fi
 READY_Q='query($p: ID!, $i: AiCatalogItemID!){ project(fullPath:$p){
   duoWorkflowRunnerAvailable
   aiCatalogItemConsumerForItem(id:$i, includeInherited:false){ id serviceAccount { id state } parentItemConsumer { serviceAccount { id state } } }
-  aiFlowTriggers(first:100){ nodes { active eventTypes aiCatalogItemConsumer { item { foundationalFlowReference } } } } } }'
+  aiFlowTriggers(first:100){ nodes { id description active eventTypes filter aiCatalogItemConsumer { item { foundationalFlowReference } } } } } }'
 CREATE_M='mutation($i: AiFlowTriggerCreateInput!){ aiFlowTriggerCreate(input:$i){ aiFlowTrigger { id } errors errorReason } }'
+UPDATE_M='mutation($i: AiFlowTriggerUpdateInput!){ aiFlowTriggerUpdate(input:$i){ aiFlowTrigger { id } errors errorReason } }'
 
-# state PROJECT -> one line: exists | inactive | notready | ready <consumer gid>; plus " norunner"
+# state PROJECT -> one line: exists | inactive | notready | ready <consumer gid>;
+# then " norunner" if no runner can run flows, then " upgrade=<trigger gids>" for automations
+# an earlier version of this skill created with only the status rule.
 state() {
-  gql "$READY_Q" "$(jq -n --arg p "$1" --arg i "$ITEM" '{p:$p, i:$i}')" | jq -r '
+  gql "$READY_Q" "$(jq -n --arg p "$1" --arg i "$ITEM" '{p:$p, i:$i}')" | jq -r --arg pre "$DESC_PREFIX" '
     .project as $p
     | ([$p.aiFlowTriggers.nodes[] | select(.aiCatalogItemConsumer.item.foundationalFlowReference == "fix_pipeline/v1" and (.eventTypes | index(3)))]) as $t
+    | ([$t[] | select((.description // "" | startswith($pre))
+                      and (((.filter | if type == "string" then (try fromjson catch {}) else (. // {}) end)
+                            | .pipeline_hooks.rules // [] | map(.field)) == ["object_attributes.status"]))
+           | .id]) as $old
     | ($p.aiCatalogItemConsumerForItem) as $c
     | (($c.serviceAccount // $c.parentItemConsumer.serviceAccount) // null) as $sa
     | (if ($p.duoWorkflowRunnerAvailable == false) then " norunner" else "" end) as $r
-    | if   any($t[]; .active) then "exists\($r)"
-      elif ($t | length) > 0 then "inactive\($r)"
+    | (if ($old | length) > 0 then " upgrade=" + ($old | join(",")) else "" end) as $u
+    | if   any($t[]; .active) then "exists\($r)\($u)"
+      elif ($t | length) > 0 then "inactive\($r)\($u)"
       elif $c == null or $sa == null or ($sa.state // "active") != "active" then "notready\($r)"
       else "ready \($c.id)\($r)" end'
 }
 
-create() {  # create PROJECT CONSUMER_GID
-  # No userId: with a catalog entry GitLab uses the entry's own service account (references/graphql.md).
-  local input out errs try=1
-  input=$(jq -n --arg p "$1" --arg c "$2" '{projectPath:$p, description:"Fix CI/CD Pipeline on failed pipelines (gitlab-duo-setup 0.5.8)",
-    eventTypes:[3], aiCatalogItemConsumerId:$c,
-    filter:{pipeline_hooks:{match:"all", rules:[{field:"object_attributes.status", operator:"eq", value:"failed"}]}}}')
+mutate() {  # mutate MUTATION VARIABLES_JSON PAYLOAD_KEY -> 0 on success, else prints the error
+  local out errs try=1
   while :; do
-    out=$(gql "$CREATE_M" "$(jq -n --argjson i "$input" '{i:$i}')" 2>&1) || { echo "error: $out"; return 1; }
-    errs=$(jq -c '.aiFlowTriggerCreate.errors' <<<"$out")
-    [[ $errs == "[]" ]] && { echo "created"; return 0; }
+    out=$(gql "$1" "$2" 2>&1) || { echo "error: $out"; return 1; }
+    errs=$(jq -c --arg k "$3" '.[$k].errors' <<<"$out")
+    [[ $errs == "[]" ]] && return 0
     # GitLab allows about 30 saves of agents, flows or automations a minute per user.
     if [[ $errs == *"too many times"* && $try -le 3 ]]; then
       echo "rate limited by GitLab, waiting 65s (try $try of 3)" >&2; sleep 65; try=$((try+1)); continue
     fi
-    echo "error: $errs $(jq -r '.aiFlowTriggerCreate.errorReason // ""' <<<"$out")"; return 1
+    echo "error: $errs $(jq -r --arg k "$3" '.[$k].errorReason // ""' <<<"$out")"; return 1
+  done
+}
+
+create() {  # create PROJECT CONSUMER_GID
+  # No userId: with a catalog entry GitLab uses the entry's own service account (references/graphql.md).
+  local input
+  input=$(jq -n --arg p "$1" --arg c "$2" --arg d "$DESC" --argjson f "$FILTER" \
+    '{projectPath:$p, description:$d, eventTypes:[3], aiCatalogItemConsumerId:$c, filter:$f}')
+  mutate "$CREATE_M" "$(jq -n --argjson i "$input" '{i:$i}')" aiFlowTriggerCreate && echo "created"
+}
+
+upgrade() {  # upgrade PROJECT COMMA_SEPARATED_TRIGGER_GIDS
+  # Adds the push-and-MR-only rule and the new description. Leaves active as it is.
+  local id r
+  for id in ${2//,/ }; do
+    if [[ $APPLY == 0 ]]; then
+      say "$1" "would limit its automation to push and MR pipelines"; UPGRADED=$((UPGRADED+1)); continue
+    fi
+    if r=$(mutate "$UPDATE_M" "$(jq -n --arg id "$id" --arg d "$DESC" --argjson f "$FILTER" '{i:{id:$id, description:$d, filter:$f}}')" aiFlowTriggerUpdate); then
+      say "$1" "limited its automation to push and MR pipelines"; UPGRADED=$((UPGRADED+1))
+    else
+      say "$1" "$r"; FAILED+=("$1")
+    fi
   done
 }
 
 # ---------- run ----------
 echo "Fix CI/CD Pipeline automation in ${#PROJECTS[@]} project(s) of $GROUP on $HOST ($([[ $APPLY == 1 ]] && echo apply || echo "dry run"))"
-CREATED=0; EXISTING=0; INACTIVE=(); FAILED=(); NORUNNER=(); PENDING=()
+CREATED=0; EXISTING=0; UPGRADED=0; INACTIVE=(); FAILED=(); NORUNNER=(); PENDING=()
 handle() {  # handle PROJECT STATE_LINE -> 0 when settled, 1 when still waiting
-  local p="$1" s="$2"
+  local p="$1" s="$2" up=""
+  if [[ $s == *" upgrade="* ]]; then up="${s##* upgrade=}"; s="${s% upgrade=*}"; fi
   [[ $s == *norunner* ]] && { NORUNNER+=("$p"); s="${s% norunner}"; }
   case "$s" in
-    exists) say "$p" "already has it"; EXISTING=$((EXISTING+1)) ;;
-    inactive) say "$p" "has one that's turned off; left alone"; INACTIVE+=("$p") ;;
+    exists) say "$p" "already has it"; EXISTING=$((EXISTING+1)); [[ -n $up ]] && upgrade "$p" "$up" ;;
+    inactive) say "$p" "has one that's turned off; left off"; INACTIVE+=("$p"); [[ -n $up ]] && upgrade "$p" "$up" ;;
     notready) return 1 ;;
     ready*)
       if [[ $APPLY == 0 ]]; then say "$p" "would create"; CREATED=$((CREATED+1)); return 0; fi
@@ -159,10 +196,10 @@ fi
 for p in ${PENDING[@]+"${PENDING[@]}"}; do say "$p" "not set up by GitLab yet; re-run later"; done
 
 echo
-echo "$([[ $APPLY == 1 ]] && echo Created || echo "Would create") $CREATED, already there $EXISTING, turned off ${#INACTIVE[@]}, not ready ${#PENDING[@]}, failed ${#FAILED[@]}."
+echo "$([[ $APPLY == 1 ]] && echo Created || echo "Would create") $CREATED, already there $EXISTING, $([[ $APPLY == 1 ]] && echo limited || echo "would limit") to push and MR pipelines $UPGRADED, turned off ${#INACTIVE[@]}, not ready ${#PENDING[@]}, failed ${#FAILED[@]}."
 [[ ${#NORUNNER[@]} -gt 0 ]] && echo "No runner can pick up flow jobs in: ${NORUNNER[*]}"
-jq -cn --argjson created "$CREATED" --argjson existing "$EXISTING" \
+jq -cn --argjson created "$CREATED" --argjson existing "$EXISTING" --argjson upgraded "$UPGRADED" \
   --arg inactive "${INACTIVE[*]-}" --arg pending "${PENDING[*]-}" --arg failed "${FAILED[*]-}" --arg norunner "${NORUNNER[*]-}" \
-  '{created:$created, existing:$existing} + ([["inactive",$inactive],["pending",$pending],["failed",$failed],["no_runner",$norunner]]
+  '{created:$created, existing:$existing, upgraded:$upgraded} + ([["inactive",$inactive],["pending",$pending],["failed",$failed],["no_runner",$norunner]]
     | map({(.[0]): (.[1] | split(" ") | map(select(. != "")))}) | add) | "RESULT " + tojson' -r
 [[ ${#PENDING[@]} -eq 0 && ${#FAILED[@]} -eq 0 ]] || exit 3
